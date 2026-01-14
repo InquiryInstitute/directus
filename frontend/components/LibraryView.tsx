@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Author, Work } from '@/lib/directus'
+import { Author, Work, getWorksByAuthor } from '@/lib/directus'
 
 interface LibraryViewProps {
   authors: Author[]

@@ -41,30 +41,7 @@ export interface Work {
 }
 
 // Helper functions
-export interface Person {
-  id: string
-  name: string
-  slug: string
-  kind?: string
-  public_domain?: boolean
-}
-
-export interface Work {
-  id: string
-  title: string
-  slug: string
-  type?: string
-  status?: string
-  visibility?: string
-  flipbook_mode?: string
-  flipbook_manifest?: {
-    pageWidth: number
-    pageHeight: number
-    pages: Array<{ n: number; src: string }>
-  }
-  primary_author_id?: Person
-}
-
+// Types are already defined below, just export them
 export type Author = Person
 
 export async function getAuthors() {
