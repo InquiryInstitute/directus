@@ -6,12 +6,6 @@ import Link from 'next/link'
 import BookReader from '@/components/BookReader'
 import TableOfContents from '@/components/TableOfContents'
 
-// For static export, we need generateStaticParams
-// Return empty array since content is dynamic (client-side rendered)
-export async function generateStaticParams() {
-  return []
-}
-
 interface Work {
   id: string
   title: string
@@ -28,8 +22,9 @@ interface Work {
 
 export default function BookPage() {
   const params = useParams()
-  const authorSlug = params.authorSlug as string
-  const workSlug = params.workSlug as string
+  const slug = params.slug as string[]
+  const authorSlug = slug?.[0] || ''
+  const workSlug = slug?.[1] || ''
   
   const [work, setWork] = useState<Work | null>(null)
   const [loading, setLoading] = useState(true)
