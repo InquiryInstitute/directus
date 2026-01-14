@@ -110,10 +110,26 @@ function parseArticle(filePath: string, volume: string, issue: string): Inquirer
     // Extract original slug if this is a revision/response
     let originalSlug: string | undefined
     if (isRevision || isAuthorResponse) {
-      // Try to find original article slug
-      const match = slug.match(/^(.+?)-(?:revised|author-response|response)$/)
+      // Try multiple patterns to find original article slug
+      // Pattern 1: slug-revised or slug-author-response
+      let match = slug.match(/^(.+?)-(?:revised|author-response|response)$/)
       if (match) {
         originalSlug = match[1]
+      } else {
+        // Pattern 2: a-author-slug-revised
+        match = slug.match(/^a-[^-]+-(.+?)-(?:revised|author-response|response)$/)
+        if (match) {
+          originalSlug = `a-${match[1]}`
+        } else {
+          // Pattern 3: Check if slug contains original in title
+          const originalTitle = typeof data.original_slug === 'string' ? data.original_slug : undefined
+          if (originalTitle) {
+            originalSlug = originalTitle
+          } else {
+            // Pattern 4: Remove -revised or -author-response from end
+            originalSlug = slug.replace(/-(?:revised|author-response|response)$/, '')
+          }
+        }
       }
     }
 

@@ -1,0 +1,19 @@
+{
+  "name": "commonplace-directus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Commonplace Digital Scholarly Library & Publication System",
+  "scripts": {
+    "import-inquirer": "tsx scripts/import-inquirer-articles.ts"
+  },
+  "dependencies": {
+    "@directus/sdk": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "gray-matter": "^4.0.3",
+    "@types/gray-matter": "^4.0.2",
+    "typescript": "^5.0.0"
+  }
+}
