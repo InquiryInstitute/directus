@@ -1,152 +1,81 @@
-# 🚀 Commonplace Deployment Status
+# 🎉 Commonplace Deployment Status
 
 ## ✅ Completed
 
-- [x] Repository created: `InquiryInstitute/directus`
-- [x] Complete schema migration file created
-- [x] Docker Compose configuration ready
-- [x] Frontend starter created (Next.js)
-- [x] Deployment scripts created
-- [x] Supabase project linked: `xougqdomkoisrxdnagcj`
+- [x] **Repository**: `InquiryInstitute/directus` created
+- [x] **Database Schema**: Applied to Supabase
+- [x] **Directus**: Deployed to Google Cloud Run
+  - URL: https://commonplace-directus-652016456291.us-central1.run.app
+  - Admin: https://commonplace-directus-652016456291.us-central1.run.app/admin
+- [x] **DNS - Directus**: `directus.inquiry.institute` → Cloud Run
+- [x] **DNS - Commonplace**: `commonplace.inquiry.institute` → GitHub Pages (CNAME)
+- [x] **GitHub Pages**: Configured with GitHub Actions workflow
+- [x] **Frontend**: Library view with 3D book spines, search, pageflip reader
+- [x] **Edge Function**: Created (needs deployment)
+- [x] **Secrets**: DIRECTUS_URL, SUPABASE_URL configured
 
-## ⏳ Next Steps
+## ⏳ In Progress
 
-### 1. Apply Database Schema (Required)
+- [ ] **GitHub Pages Deployment**: Running (check Actions tab)
+- [ ] **Custom Domain**: Needs to be configured in GitHub Pages settings
+- [ ] **Edge Function**: Needs to be deployed to Supabase
 
-**Option A: Via Supabase Dashboard (Recommended)**
+## 📋 Next Steps
 
-1. Open SQL Editor:
-   https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj/sql/new
+### 1. Configure Custom Domain in GitHub Pages
 
-2. Copy the entire contents of:
+1. Go to: https://github.com/InquiryInstitute/directus/settings/pages
+2. Under "Custom domain", enter:
    ```
-   supabase/migrations/20260113000000_commonplace_schema.sql
+   commonplace.inquiry.institute
    ```
+3. Check **"Enforce HTTPS"**
+4. Click **"Save"**
 
-3. Paste into SQL Editor and click **"Run"**
-
-**Option B: Via Script**
-
-```bash
-cd ~/GitHub/directus
-./scripts/apply-commonplace-schema.sh
-```
-
-This will open the SQL Editor for you.
-
-### 2. Create Storage Bucket
-
-1. Go to: https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj/storage/buckets
-2. Click **"New Bucket"**
-3. Name: `commonplace-assets`
-4. Make it **PUBLIC**
-5. Click **"Create bucket"**
-
-### 3. Configure Directus
+### 2. Deploy Edge Function
 
 ```bash
-cd ~/GitHub/directus/docker
-
-# Create .env file
-cp env.template .env
-
-# Edit .env with your Supabase credentials:
-# - DB_HOST=db.xougqdomkoisrxdnagcj.supabase.co
-# - DB_USER=postgres
-# - DB_PASSWORD=<your-database-password>
-# - DB_DATABASE=postgres
+cd ~/GitHub/Inquiry.Institute/supabase/functions/get-flipbook
+supabase functions deploy get-flipbook --project-ref xougqdomkoisrxdnagcj --no-verify-jwt
 ```
 
-**Get credentials from:**
-- Settings → Database: https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj/settings/database
+Then set environment variables in Supabase Dashboard:
+- `DIRECTUS_URL`: https://directus.inquiry.institute
+- `DIRECTUS_TOKEN`: (Directus public read token)
 
-### 4. Generate Directus Keys
+### 3. Add Missing Secret
 
 ```bash
-cd ~/GitHub/directus
-./scripts/generate-directus-keys.sh
-
-# Copy the generated keys into docker/.env:
-# DIRECTUS_KEY=<generated-key>
-# DIRECTUS_SECRET=<generated-secret>
+gh secret set DIRECTUS_TOKEN --repo InquiryInstitute/directus --body "your-directus-token"
 ```
 
-### 5. Start Directus
+### 4. Verify Deployment
 
-```bash
-cd ~/GitHub/directus/docker
-docker compose up -d
+Once GitHub Actions completes:
+- Visit: https://commonplace.inquiry.institute
+- Should see library view with book spines
+- Search should work
+- Clicking a book should open pageflip reader
 
-# Check logs
-docker logs commonplace-directus
+## Current URLs
 
-# Check health
-curl http://localhost:8055/server/health
-```
+- **Directus Admin**: https://directus.inquiry.institute/admin
+- **Directus API**: https://directus.inquiry.institute
+- **Commonplace Library**: https://commonplace.inquiry.institute (after deployment)
+- **GitHub Actions**: https://github.com/InquiryInstitute/directus/actions
 
-### 6. Access Directus Admin
+## DNS Status
 
-1. Visit: http://localhost:8055/admin
-2. Login with credentials from `docker/.env`:
-   - Email: `admin@inquiry.institute` (or what you set)
-   - Password: (from ADMIN_PASSWORD in .env)
+- ✅ `directus.inquiry.institute` → Cloud Run (CNAME)
+- ✅ `commonplace.inquiry.institute` → GitHub Pages (CNAME)
+- ⏳ Waiting for DNS propagation (5-60 minutes)
 
-### 7. Configure Directus
+## Monitoring
 
-**Import Schema (if available)**
-- Settings → Data Model → Import Schema
-
-**Create Roles**
-- Settings → Roles & Permissions → Create:
-  - Admin (full access)
-  - Editor (manage reviews, decisions)
-  - Reviewer (review assigned works)
-  - Author (draft, submit, revise)
-  - Publisher (schedule, publish)
-  - Public (read published works only)
-
-**Configure Storage**
-- Settings → File Storage → Add:
-  - Name: `supabase`
-  - Driver: `supabase`
-  - Endpoint: `https://xougqdomkoisrxdnagcj.supabase.co`
-  - Key: (Supabase service role key)
-  - Bucket: `commonplace-assets`
-
-### 8. Deploy Frontend (Optional)
-
-```bash
-cd ~/GitHub/directus/frontend
-npm install
-cp env.template .env.local
-# Edit .env.local with Directus URL and token
-npm run dev
-```
-
-### 9. Production Deployment
-
-See `docs/DEPLOYMENT.md` for complete production deployment instructions.
+- **GitHub Actions**: https://github.com/InquiryInstitute/directus/actions
+- **Pages Status**: https://github.com/InquiryInstitute/directus/settings/pages
+- **Cloud Run**: https://console.cloud.google.com/run/detail/us-central1/commonplace-directus
 
 ---
 
-## Quick Links
-
-- **Supabase Dashboard**: https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj
-- **SQL Editor**: https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj/sql/new
-- **Storage**: https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj/storage/buckets
-- **Database Settings**: https://supabase.com/dashboard/project/xougqdomkoisrxdnagcj/settings/database
-- **Directus Admin**: http://localhost:8055/admin (after starting Docker)
-
----
-
-## Current Status
-
-✅ **Infrastructure**: Ready  
-⏳ **Database Schema**: Needs to be applied  
-⏳ **Storage Bucket**: Needs to be created  
-⏳ **Directus**: Needs to be configured and started  
-⏳ **Frontend**: Ready for development  
-
----
-
-**Next Action**: Apply database schema via Supabase Dashboard SQL Editor
+**Status**: Deployment in progress! 🚀
