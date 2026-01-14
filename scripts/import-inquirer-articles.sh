@@ -33,6 +33,13 @@ echo "  Directus URL: $DIRECTUS_URL"
 echo "  Posts Path: $INQUIRER_POSTS_ROOT"
 echo ""
 
+# Handle SSL certificate issues (if NODE_TLS_REJECT_UNAUTHORIZED is set)
+if [ "$NODE_TLS_REJECT_UNAUTHORIZED" = "0" ]; then
+    echo "⚠️  Warning: SSL certificate verification is disabled"
+    echo "   This should only be used for development/testing"
+    echo ""
+fi
+
 # Run import script
 cd "$(dirname "$0")/.."
 npx tsx scripts/import-inquirer-articles.ts
