@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
 
-// Type for StPageFlip (will be loaded dynamically)
-declare class StPageFlip {
+// Type for PageFlip (will be loaded dynamically)
+declare class PageFlip {
   constructor(container: HTMLElement, options: any)
-  addPage(page: HTMLElement): void
+  loadFromHTML(element: HTMLElement): void
   flipNext(): void
   flipPrev(): void
 }
@@ -37,10 +37,10 @@ export default function BookReader({ work }: BookReaderProps) {
 
     // If flipbook_manifest exists, use it
     if (work.flipbook_manifest && work.flipbook_manifest.pages.length > 0) {
-      // Dynamically import StPageFlip
-      import('st-page-flip').then((module) => {
-        const StPageFlip = module.default || module.StPageFlip
-        const pageFlip = new StPageFlip(containerRef.current!, {
+      // Dynamically import PageFlip
+      import('page-flip').then((module) => {
+        const { PageFlip } = module
+        const pageFlip = new PageFlip(containerRef.current!, {
           width: work.flipbook_manifest!.pageWidth,
           height: work.flipbook_manifest!.pageHeight,
           showCover: true,
@@ -71,10 +71,10 @@ export default function BookReader({ work }: BookReaderProps) {
       // Fallback: render markdown content as pages
       const pages = splitMarkdownIntoPages(work.content_md)
       
-      // Dynamically import StPageFlip only when needed
-      import('st-page-flip').then((module) => {
-        const StPageFlip = module.default || module.StPageFlip
-        const pageFlip = new StPageFlip(containerRef.current!, {
+      // Dynamically import PageFlip only when needed
+      import('page-flip').then((module) => {
+        const { PageFlip } = module
+        const pageFlip = new PageFlip(containerRef.current!, {
           width: 900,
           height: 1200,
           showCover: true,

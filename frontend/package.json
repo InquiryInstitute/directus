@@ -14,7 +14,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@directus/sdk": "^14.0.0",
-    "st-page-flip": "^1.0.0",
+    "page-flip": "^1.0.0",
     "marked": "^11.0.0"
   },
   "devDependencies": {
