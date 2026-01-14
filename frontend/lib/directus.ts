@@ -42,17 +42,32 @@ export interface Work {
 
 // Helper functions
 export async function getAuthors() {
+  // Use Supabase Edge Function for better performance
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
   const response = await fetch(
-    `${directusUrl}/items/persons?filter[kind][_eq]=faculty&filter[public_domain][_eq]=true`,
+    `${supabaseUrl}/functions/v1/get-flipbook?author=all`,
     {
       headers: {
-        Authorization: `Bearer ${directusToken}`,
+        'Content-Type': 'application/json',
       },
     }
   )
-  if (!response.ok) throw new Error('Failed to fetch authors')
+  if (!response.ok) {
+    // Fallback to Directus
+    const directusResponse = await fetch(
+      `${directusUrl}/items/persons?filter[kind][_eq]=faculty&filter[public_domain][_eq]=true`,
+      {
+        headers: {
+          Authorization: `Bearer ${directusToken}`,
+        },
+      }
+    )
+    if (!directusResponse.ok) throw new Error('Failed to fetch authors')
+    const data = await directusResponse.json()
+    return data.data as Person[]
+  }
   const data = await response.json()
-  return data.data as Person[]
+  return data.authors || []
 }
 
 export async function getAuthorBySlug(slug: string) {
@@ -70,17 +85,32 @@ export async function getAuthorBySlug(slug: string) {
 }
 
 export async function getWorksByAuthor(authorId: string) {
+  // Use Supabase Edge Function
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
   const response = await fetch(
-    `${directusUrl}/items/works?filter[primary_author_id][_eq]=${authorId}&filter[status][_eq]=published&filter[visibility][_eq]=public`,
+    `${supabaseUrl}/functions/v1/get-flipbook?author=${authorId}`,
     {
       headers: {
-        Authorization: `Bearer ${directusToken}`,
+        'Content-Type': 'application/json',
       },
     }
   )
-  if (!response.ok) throw new Error('Failed to fetch works')
+  if (!response.ok) {
+    // Fallback to Directus
+    const directusResponse = await fetch(
+      `${directusUrl}/items/works?filter[primary_author_id][_eq]=${authorId}&filter[status][_eq]=published&filter[visibility][_eq]=public`,
+      {
+        headers: {
+          Authorization: `Bearer ${directusToken}`,
+        },
+      }
+    )
+    if (!directusResponse.ok) throw new Error('Failed to fetch works')
+    const data = await directusResponse.json()
+    return data.data as Work[]
+  }
   const data = await response.json()
-  return data.data as Work[]
+  return data.works || []
 }
 
 export async function getWorkBySlug(slug: string) {

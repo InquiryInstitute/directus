@@ -25,3 +25,21 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+/* Book spine vertical text */
+.writing-vertical-rl {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+/* Page flip styles */
+.book-container {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.page {
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
