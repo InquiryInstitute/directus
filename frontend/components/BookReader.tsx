@@ -29,7 +29,7 @@ interface BookReaderProps {
 
 export default function BookReader({ work }: BookReaderProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const pageFlipRef = useRef<StPageFlip | null>(null)
+  const pageFlipRef = useRef<PageFlip | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
