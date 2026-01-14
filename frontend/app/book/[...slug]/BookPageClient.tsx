@@ -23,7 +23,7 @@ interface Work {
 export default function BookPageClient() {
   const params = useParams()
   const router = useRouter()
-  const slug = params.slug as string[] | undefined
+  const slug = params.slug as string[]
   const workSlug = slug?.[slug.length - 1] || ''
   
   const [work, setWork] = useState<Work | null>(null)
