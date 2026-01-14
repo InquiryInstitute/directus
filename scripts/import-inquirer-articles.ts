@@ -111,26 +111,21 @@ function parseArticle(filePath: string, volume: string, issue: string): Inquirer
     // Extract original slug if this is a revision/response
     let originalSlug: string | undefined
     if (isRevision || isAuthorResponse) {
-      // Try multiple patterns to find original article slug
-      // Pattern 1: slug-revised or slug-author-response
-      let match = slug.match(/^(.+?)-(?:revised|author-response|response)$/)
-      if (match) {
-        originalSlug = match[1]
-      } else {
-        // Pattern 2: a-author-slug-revised
-        match = slug.match(/^a-[^-]+-(.+?)-(?:revised|author-response|response)$/)
-        if (match) {
-          originalSlug = `a-${match[1]}`
-        } else {
-          // Pattern 3: Check if slug contains original in title
-          const originalTitle = typeof data.original_slug === 'string' ? data.original_slug : undefined
-          if (originalTitle) {
-            originalSlug = originalTitle
-          } else {
-            // Pattern 4: Remove -revised or -author-response from end
-            originalSlug = slug.replace(/-(?:revised|author-response|response)$/, '')
-          }
-        }
+      // Pattern 1: Remove -revised or -author-response from end
+      // e.g., "a-plato-creating-historical-avatars-author-response" -> "a-plato-creating-historical-avatars"
+      originalSlug = slug.replace(/-(?:revised|author-response|response)$/, '')
+      
+      // Pattern 2: Check if slug contains original in frontmatter
+      if (typeof data.original_slug === 'string' && data.original_slug.trim()) {
+        originalSlug = data.original_slug.trim()
+      }
+      
+      // Pattern 3: For "creating-historical-avatars-revised", try to find "a-plato-creating-historical-avatars"
+      if (!originalSlug || !originalSlug.startsWith('a-')) {
+        // Try to find original by looking for articles with similar slug
+        const baseSlug = originalSlug?.replace(/^a-[^-]+-/, '') || slug.replace(/-(?:revised|author-response|response)$/, '')
+        // This will be matched later when we have all articles
+        originalSlug = baseSlug
       }
     }
 
@@ -337,11 +332,26 @@ async function main() {
   for (const revision of revisions) {
     const workId = await importArticle(revision)
     if (workId && revision.originalSlug) {
-      const originalWorkId = workMap.get(revision.originalSlug)
+      // Try multiple slug variations to find original
+      let originalWorkId = workMap.get(revision.originalSlug)
+      
+      // If not found, try without 'a-' prefix
+      if (!originalWorkId && revision.originalSlug.startsWith('a-')) {
+        const baseSlug = revision.originalSlug.replace(/^a-[^-]+-/, '')
+        // Try to find by matching base slug
+        for (const [slug, id] of workMap.entries()) {
+          if (slug.includes(baseSlug) && !slug.includes('revised') && !slug.includes('author-response')) {
+            originalWorkId = id
+            break
+          }
+        }
+      }
+      
       if (originalWorkId) {
         await linkRevision(originalWorkId, workId, 'revises')
       } else {
-        console.warn(`  ⚠️  Original work not found: ${revision.originalSlug}`)
+        console.warn(`  ⚠️  Original work not found for: ${revision.slug} (looking for: ${revision.originalSlug})`)
+        console.warn(`      Available slugs: ${Array.from(workMap.keys()).slice(0, 5).join(', ')}...`)
       }
     }
   }
@@ -351,11 +361,26 @@ async function main() {
   for (const response of responses) {
     const workId = await importArticle(response)
     if (workId && response.originalSlug) {
-      const originalWorkId = workMap.get(response.originalSlug)
+      // Try multiple slug variations to find original
+      let originalWorkId = workMap.get(response.originalSlug)
+      
+      // If not found, try without 'a-' prefix
+      if (!originalWorkId && response.originalSlug.startsWith('a-')) {
+        const baseSlug = response.originalSlug.replace(/^a-[^-]+-/, '')
+        // Try to find by matching base slug
+        for (const [slug, id] of workMap.entries()) {
+          if (slug.includes(baseSlug) && !slug.includes('revised') && !slug.includes('author-response')) {
+            originalWorkId = id
+            break
+          }
+        }
+      }
+      
       if (originalWorkId) {
         await linkRevision(originalWorkId, workId, 'responds_to')
       } else {
-        console.warn(`  ⚠️  Original work not found: ${response.originalSlug}`)
+        console.warn(`  ⚠️  Original work not found for: ${response.slug} (looking for: ${response.originalSlug})`)
+        console.warn(`      Available slugs: ${Array.from(workMap.keys()).slice(0, 5).join(', ')}...`)
       }
     }
   }
