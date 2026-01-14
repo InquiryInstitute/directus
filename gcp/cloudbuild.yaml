@@ -40,6 +40,10 @@ steps:
       - 'DB_CLIENT=pg,DB_HOST=${_DB_HOST},DB_PORT=${_DB_PORT},DB_DATABASE=${_DB_DATABASE},DB_USER=${_DB_USER},DB_PASSWORD=${_DB_PASSWORD},KEY=${_DIRECTUS_KEY},SECRET=${_DIRECTUS_SECRET},PUBLIC_URL=${_PUBLIC_URL},ADMIN_EMAIL=${_ADMIN_EMAIL},ADMIN_PASSWORD=${_ADMIN_PASSWORD},CORS_ENABLED=true'
       - '--set-env-vars'
       - 'CORS_ORIGIN=${_CORS_ORIGIN}'
+      - '--set-env-vars'
+      - 'PORT=8080'
+      - '--port'
+      - '8080'
       - '--memory'
       - '2Gi'
       - '--cpu'
@@ -48,6 +52,8 @@ steps:
       - '1'
       - '--max-instances'
       - '10'
+      - '--timeout'
+      - '300'
 
 images:
   - 'gcr.io/$PROJECT_ID/commonplace-directus:latest'
