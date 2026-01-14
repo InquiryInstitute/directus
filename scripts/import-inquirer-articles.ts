@@ -10,7 +10,7 @@
  */
 
 import { readFileSync, readdirSync } from 'fs'
-import { join, basename } from 'path'
+import { join, basename, dirname } from 'path'
 // @ts-ignore - gray-matter doesn't have types
 import matter from 'gray-matter'
 import { createDirectus, rest, staticToken, readItems, createItem, updateItem } from '@directus/sdk'
