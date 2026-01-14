@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  directus:
+    image: directus/directus:latest
+    container_name: commonplace-directus
+    ports:
+      - "8055:8055"
+    environment:
+      # Database
+      DB_CLIENT: pg
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      
+      # Directus Configuration
+      KEY: ${DIRECTUS_KEY}
+      SECRET: ${DIRECTUS_SECRET}
+      
+      # Admin User (for first-time setup)
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@inquiry.institute}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      
+      # Public URL
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8055}
+      
+      # CORS
+      CORS_ENABLED: ${CORS_ENABLED:-true}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      
+      # Storage
+      STORAGE_LOCATIONS: ${STORAGE_LOCATIONS:-local}
+      STORAGE_LOCAL_ROOT: ${STORAGE_LOCAL_ROOT:-./uploads}
+      
+      # Extensions
+      EXTENSIONS_AUTO_RELOAD: ${EXTENSIONS_AUTO_RELOAD:-false}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_STYLE: ${LOG_STYLE:-raw}
+    volumes:
+      - ./uploads:/directus/uploads
+      - ./extensions:/directus/extensions
+      - ./schema.yaml:/directus/schema.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8055/server/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - commonplace
+
+networks:
+  commonplace:
+    driver: bridge
