@@ -104,9 +104,10 @@ function parseArticle(filePath: string, volume: string, issue: string): Inquirer
     }
 
     const fileName = basename(filePath, '.md')
+    const dirName = basename(dirname(filePath))
     const isRevision = fileName.includes('revised') || fileName.includes('revision')
     const isAuthorResponse = fileName.includes('author-response') || fileName.includes('response')
-    const isReview = fileName.includes('review') && !isAuthorResponse
+    const isReview = (fileName.includes('review') || dirName === 'reviews') && !isAuthorResponse
 
     // Extract original slug if this is a revision/response
     let originalSlug: string | undefined
@@ -176,9 +177,20 @@ function collectArticles(): InquirerArticle[] {
 
     for (const issue of issues) {
       const issuePath = join(volumePath, issue)
+      
+      // Get files from main issue directory
       const files = readdirSync(issuePath, { withFileTypes: true })
         .filter(f => f.isFile() && f.name.endsWith('.md'))
         .map(f => join(issuePath, f.name))
+
+      // Get files from reviews subdirectory
+      const reviewsPath = join(issuePath, 'reviews')
+      if (require('fs').existsSync(reviewsPath)) {
+        const reviewFiles = readdirSync(reviewsPath, { withFileTypes: true })
+          .filter(f => f.isFile() && f.name.endsWith('.md'))
+          .map(f => join(reviewsPath, f.name))
+        files.push(...reviewFiles)
+      }
 
       for (const filePath of files) {
         const article = parseArticle(filePath, volume, issue)
