@@ -46,6 +46,7 @@ for table in "${TABLES[@]}"; do
   echo "📦 Importing $table..."
   
   # Create collection from existing table
+  # Directus will auto-detect fields from the database table
   RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
     -H "Authorization: Bearer $DIRECTUS_TOKEN" \
     -H "Content-Type: application/json" \
@@ -54,13 +55,13 @@ for table in "${TABLES[@]}"; do
       \"meta\": {
         \"collection\": \"$table\",
         \"icon\": \"table\",
-        \"note\": \"Auto-imported from database\"
+        \"note\": \"Auto-imported from database table\"
       },
       \"schema\": {
         \"name\": \"$table\"
       }
     }" \
-    "$DIRECTUS_URL/collections")
+    "$DIRECTUS_URL/collections" 2>&1)
 
   HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
   BODY=$(echo "$RESPONSE" | sed '$d')
