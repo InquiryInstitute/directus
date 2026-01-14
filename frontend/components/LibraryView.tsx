@@ -192,7 +192,7 @@ function BookSpine({ work, author, onClick }: BookSpineProps) {
   
   return (
     <Link
-      href={`/book/${author.slug}/${work.slug}`}
+      href={`/book?slug=${work.slug}`}
       onClick={onClick}
       className="group relative"
     >

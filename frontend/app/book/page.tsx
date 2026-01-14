@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BookReader from '@/components/BookReader'
 import TableOfContents from '@/components/TableOfContents'
@@ -20,18 +20,17 @@ interface Work {
   toc?: Array<{ id: string; text: string; level: number }>
 }
 
-export default function BookPageClient() {
-  const params = useParams()
+function BookPageContent() {
+  const searchParams = useSearchParams()
   const router = useRouter()
-  const slug = params.slug as string[]
-  const workSlug = slug?.[slug.length - 1] || ''
+  const slug = searchParams.get('slug') || ''
   
   const [work, setWork] = useState<Work | null>(null)
   const [loading, setLoading] = useState(true)
   const [showToc, setShowToc] = useState(false)
 
   useEffect(() => {
-    if (!workSlug) {
+    if (!slug) {
       router.push('/')
       return
     }
@@ -39,7 +38,7 @@ export default function BookPageClient() {
     async function loadWork() {
       try {
         const response = await fetch(
-          `https://xougqdomkoisrxdnagcj.supabase.co/functions/v1/get-flipbook?slug=${workSlug}`
+          `https://xougqdomkoisrxdnagcj.supabase.co/functions/v1/get-flipbook?slug=${slug}`
         )
         const data = await response.json()
         setWork(data.work)
@@ -50,7 +49,7 @@ export default function BookPageClient() {
       }
     }
     loadWork()
-  }, [workSlug, router])
+  }, [slug, router])
 
   if (loading) {
     return (
@@ -99,5 +98,17 @@ export default function BookPageClient() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function BookPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </main>
+    }>
+      <BookPageContent />
+    </Suspense>
   )
 }
