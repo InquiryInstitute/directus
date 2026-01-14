@@ -41,6 +41,32 @@ export interface Work {
 }
 
 // Helper functions
+export interface Person {
+  id: string
+  name: string
+  slug: string
+  kind?: string
+  public_domain?: boolean
+}
+
+export interface Work {
+  id: string
+  title: string
+  slug: string
+  type?: string
+  status?: string
+  visibility?: string
+  flipbook_mode?: string
+  flipbook_manifest?: {
+    pageWidth: number
+    pageHeight: number
+    pages: Array<{ n: number; src: string }>
+  }
+  primary_author_id?: Person
+}
+
+export type Author = Person
+
 export async function getAuthors() {
   // Use Supabase Edge Function for better performance
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
