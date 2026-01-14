@@ -9,7 +9,8 @@ echo ""
 
 # Check for required environment variables
 if [ -z "$DIRECTUS_URL" ]; then
-    export DIRECTUS_URL="https://directus.inquiry.institute"
+    # Use Cloud Run URL directly (custom domain needs domain mapping)
+    export DIRECTUS_URL="https://commonplace-directus-652016456291.us-central1.run.app"
 fi
 
 if [ -z "$DIRECTUS_TOKEN" ]; then
