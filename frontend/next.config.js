@@ -12,8 +12,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_DIRECTUS_URL: process.env.NEXT_PUBLIC_DIRECTUS_URL || 'https://directus.inquiry.institute',
   },
-  // Allow dynamic routes in static export (they'll be client-side rendered)
-  dynamicParams: true,
 }
 
 module.exports = nextConfig
