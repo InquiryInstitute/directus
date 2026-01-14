@@ -6,6 +6,10 @@ import Link from 'next/link'
 import BookReader from '@/components/BookReader'
 import TableOfContents from '@/components/TableOfContents'
 
+// For static export, we need to generate params
+// Since content is dynamic, we'll use client-side rendering
+export const dynamicParams = true
+
 interface Work {
   id: string
   title: string
