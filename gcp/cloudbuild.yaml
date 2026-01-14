@@ -54,6 +54,7 @@ steps:
       - '10'
       - '--timeout'
       - '300'
+      - '--startup-cpu-boost'
 
 images:
   - 'gcr.io/$PROJECT_ID/commonplace-directus:latest'
