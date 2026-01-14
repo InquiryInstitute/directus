@@ -9,8 +9,9 @@
  * 4. Links review/revision artifacts as related works
  */
 
-import { readFileSync, readdirSync, statSync } from 'fs'
-import { join, dirname, basename } from 'path'
+import { readFileSync, readdirSync } from 'fs'
+import { join, basename } from 'path'
+// @ts-ignore - gray-matter doesn't have types
 import matter from 'gray-matter'
 import { createDirectus, rest, staticToken, readItems, createItem, updateItem } from '@directus/sdk'
 
