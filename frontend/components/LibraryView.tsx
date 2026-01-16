@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { Author, Work } from '@/lib/directus'
 
@@ -29,21 +29,27 @@ export default function LibraryView({ authors }: LibraryViewProps) {
   }, [authors])
 
   // Find matching author for search
-  const matchingAuthor = useMemo(() => {
-    if (!searchQuery) return null
-    const query = searchQuery.toLowerCase()
+  const findMatchingAuthor = (query: string) => {
+    if (!query) return null
+    const q = query.toLowerCase()
     return sortedAuthors.find(author => 
-      author.name.toLowerCase().includes(query) ||
-      getDisplayName(author.name).toLowerCase().includes(query)
+      author.name.toLowerCase().includes(q) ||
+      getDisplayName(author.name).toLowerCase().includes(q)
     )
-  }, [searchQuery, sortedAuthors])
+  }
 
-  // Scroll to matching author when search changes
-  useEffect(() => {
-    if (matchingAuthor && shelfRef.current) {
-      // Use setTimeout to ensure DOM is ready
-      setTimeout(() => {
-        const bookElement = document.getElementById(`book-${matchingAuthor.slug}`)
+  const matchingAuthor = useMemo(() => findMatchingAuthor(searchQuery), [searchQuery, sortedAuthors])
+
+  // Handle search input and scroll
+  const handleSearch = (value: string) => {
+    setSearchQuery(value)
+    
+    // Find and scroll to matching author
+    const match = findMatchingAuthor(value)
+    if (match && shelfRef.current) {
+      // Small delay to let React update
+      requestAnimationFrame(() => {
+        const bookElement = document.getElementById(`book-${match.slug}`)
         const shelf = shelfRef.current
         if (bookElement && shelf) {
           const bookRect = bookElement.getBoundingClientRect()
@@ -59,9 +65,9 @@ export default function LibraryView({ authors }: LibraryViewProps) {
             behavior: 'smooth'
           })
         }
-      }, 150)
+      })
     }
-  }, [matchingAuthor])
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900">
@@ -82,7 +88,7 @@ export default function LibraryView({ authors }: LibraryViewProps) {
             type="text"
             placeholder="Search authors..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="w-full px-5 py-4 pl-14 text-lg bg-stone-800/50 border-2 border-amber-900/40 rounded-xl focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20 text-amber-100 placeholder-amber-200/40"
           />
           <svg
