@@ -33,54 +33,48 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Directus API URL
-    const directusUrl = Deno.env.get('DIRECTUS_URL') || 'https://directus.inquiry.institute'
-    const directusToken = Deno.env.get('DIRECTUS_TOKEN') || ''
-
     if (authorSlug) {
       if (authorSlug === 'all') {
-        // Get all authors with their works
-        const authorsResponse = await fetch(
-          `${directusUrl}/items/persons?filter[kind][_eq]=faculty&filter[public_domain][_eq]=true&fields=id,name,slug`,
-          {
-            headers: {
-              'Authorization': `Bearer ${directusToken}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
+        // Get all authors with their works from Supabase directly
+        const { data: authors, error } = await supabase
+          .from('persons')
+          .select(`
+            id,
+            name,
+            slug,
+            kind,
+            public_domain,
+            works (
+              id,
+              title,
+              slug,
+              cover_image,
+              status,
+              visibility
+            )
+          `)
+          .eq('kind', 'faculty')
+          .eq('public_domain', true)
         
-        if (!authorsResponse.ok) {
-          throw new Error(`Directus API error: ${authorsResponse.status}`)
+        if (error) {
+          throw new Error(`Supabase error: ${error.message}`)
         }
         
-        const authorsData = await authorsResponse.json()
         return new Response(
-          JSON.stringify({ authors: authorsData.data || [] }),
+          JSON.stringify({ authors: authors || [] }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      // Get all works for a specific author
+      // Get all works for a specific author from Supabase
       // First get author by slug
-      const authorResponse = await fetch(
-        `${directusUrl}/items/persons?filter[slug][_eq]=${authorSlug}&limit=1`,
-        {
-          headers: {
-            'Authorization': `Bearer ${directusToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+      const { data: author, error: authorError } = await supabase
+        .from('persons')
+        .select('id, name, slug')
+        .eq('slug', authorSlug)
+        .single()
 
-      if (!authorResponse.ok) {
-        throw new Error(`Directus API error: ${authorResponse.status}`)
-      }
-
-      const authorData = await authorResponse.json()
-      const author = authorData.data?.[0]
-
-      if (!author) {
+      if (authorError || !author) {
         return new Response(
           JSON.stringify({ error: 'Author not found' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -88,46 +82,38 @@ serve(async (req) => {
       }
 
       // Get works for this author
-      const worksResponse = await fetch(
-        `${directusUrl}/items/works?filter[primary_author_id][_eq]=${author.id}&filter[status][_eq]=published&filter[visibility][_eq]=public&fields=id,title,slug,abstract,cover_image,flipbook_mode,flipbook_manifest,primary_author_id`,
-        {
-          headers: {
-            'Authorization': `Bearer ${directusToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
+      const { data: works, error: worksError } = await supabase
+        .from('works')
+        .select('id, title, slug, abstract, cover_image, flipbook_mode, flipbook_manifest, primary_author_id')
+        .eq('primary_author_id', author.id)
+        .eq('status', 'published')
+        .eq('visibility', 'public')
 
-      if (!worksResponse.ok) {
-        throw new Error(`Directus API error: ${worksResponse.status}`)
+      if (worksError) {
+        throw new Error(`Supabase error: ${worksError.message}`)
       }
 
-      const worksData = await worksResponse.json()
       return new Response(
-        JSON.stringify({ works: worksData.data || [] }),
+        JSON.stringify({ works: works || [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Get specific work by slug
-    const response = await fetch(
-      `${directusUrl}/items/works?filter[slug][_eq]=${slug}&limit=1&fields=*,primary_author_id.*`,
-      {
-        headers: {
-          'Authorization': `Bearer ${directusToken}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    // Get specific work by slug from Supabase
+    const { data: work, error: workError } = await supabase
+      .from('works')
+      .select(`
+        *,
+        persons (
+          id,
+          name,
+          slug
+        )
+      `)
+      .eq('slug', slug)
+      .single()
 
-    if (!response.ok) {
-      throw new Error(`Directus API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    const work = data.data?.[0]
-
-    if (!work) {
+    if (workError || !work) {
       return new Response(
         JSON.stringify({ error: 'Work not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

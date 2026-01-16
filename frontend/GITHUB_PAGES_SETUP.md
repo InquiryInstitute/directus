@@ -31,7 +31,7 @@ Deployment happens automatically via GitHub Actions when you push to `main`:
 2. **Add Secrets** (Settings → Secrets and variables → Actions):
    - `DIRECTUS_URL`: `https://directus.inquiry.institute`
    - `DIRECTUS_TOKEN`: (Directus public read token)
-   - `SUPABASE_URL`: `https://xougqdomkoisrxdnagcj.supabase.co`
+   - `SUPABASE_URL`: `https://pilmscrodlitdrygabvo.supabase.co`
 
 3. **Deploy**:
    ```bash

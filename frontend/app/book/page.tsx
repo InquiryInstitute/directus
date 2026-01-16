@@ -38,7 +38,7 @@ function BookPageContent() {
     async function loadWork() {
       try {
         const response = await fetch(
-          `https://xougqdomkoisrxdnagcj.supabase.co/functions/v1/get-flipbook?slug=${slug}`
+          `https://pilmscrodlitdrygabvo.supabase.co/functions/v1/get-flipbook?slug=${slug}`
         )
         const data = await response.json()
         setWork(data.work)

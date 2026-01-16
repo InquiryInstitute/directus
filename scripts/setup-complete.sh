@@ -53,13 +53,25 @@ fi
 export DIRECTUS_TOKEN
 export DIRECTUS_URL
 
-# Step 2: Test token
+# Step 2: Test token with actual API call
 echo ""
 echo "Step 2: Testing token..."
-if curl -s -H "Authorization: Bearer $DIRECTUS_TOKEN" "$DIRECTUS_URL/server/health" > /dev/null 2>&1; then
+# Test with an actual authenticated endpoint
+if curl -s -H "Authorization: Bearer $DIRECTUS_TOKEN" "$DIRECTUS_URL/users/me" > /dev/null 2>&1; then
+    echo "✅ Token works!"
+elif curl -s -H "Authorization: Bearer $DIRECTUS_TOKEN" "$DIRECTUS_URL/collections" > /dev/null 2>&1; then
     echo "✅ Token works!"
 else
-    echo "⚠️  Token test failed, but continuing..."
+    echo "❌ Token test failed!"
+    echo ""
+    echo "The token you provided is not valid for authenticated API calls."
+    echo "Please create a proper static token through Directus admin UI:"
+    echo "  1. Go to: $DIRECTUS_URL/admin"
+    echo "  2. Settings → Access Tokens → Create Token"
+    echo "  3. Copy the token and run this script again"
+    echo ""
+    echo "See GET_TOKEN_PROPERLY.md for detailed instructions."
+    exit 1
 fi
 
 # Step 3: Import collections

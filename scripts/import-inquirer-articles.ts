@@ -13,14 +13,25 @@ import { readFileSync, readdirSync } from 'fs'
 import { join, basename, dirname } from 'path'
 // @ts-ignore - gray-matter doesn't have types
 import matter from 'gray-matter'
-import { createDirectus, rest, staticToken, readItems, createItem, updateItem } from '@directus/sdk'
+import { createDirectus, rest, authentication, staticToken, readItems, createItem, updateItem } from '@directus/sdk'
 
-// Directus client
-const directusUrl = process.env.DIRECTUS_URL || 'https://directus.inquiry.institute'
+// Directus client - use email/password if available, otherwise static token
+const directusUrl = process.env.DIRECTUS_URL || 'https://commonplace-directus-652016456291.us-central1.run.app'
 const directusToken = process.env.DIRECTUS_TOKEN || ''
-const directus = createDirectus(directusUrl)
-  .with(rest())
-  .with(staticToken(directusToken))
+const directusEmail = process.env.DIRECTUS_EMAIL || ''
+const directusPassword = process.env.DIRECTUS_PASSWORD || ''
+
+let directus = createDirectus(directusUrl).with(rest())
+
+// Use email/password auth if provided, otherwise use static token
+if (directusEmail && directusPassword) {
+  directus = directus.with(authentication())
+} else if (directusToken) {
+  directus = directus.with(staticToken(directusToken))
+} else {
+  console.error('❌ Either DIRECTUS_TOKEN or (DIRECTUS_EMAIL and DIRECTUS_PASSWORD) required')
+  process.exit(1)
+}
 
 // Paths - adjust based on where script is run from
 const INQUIRER_POSTS_ROOT = process.env.INQUIRER_POSTS_ROOT || 
@@ -310,6 +321,13 @@ async function linkRevision(originalWorkId: string, revisionWorkId: string, rela
 
 // Main import function
 async function main() {
+  // Authenticate if using email/password
+  if (directusEmail && directusPassword) {
+    console.log('🔐 Authenticating with Directus...')
+    await directus.login(directusEmail, directusPassword)
+    console.log('✅ Authenticated successfully\n')
+  }
+
   console.log('📚 Importing Inquirer articles to Commonplace\n')
 
   // Collect articles
