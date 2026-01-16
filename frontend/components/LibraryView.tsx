@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Author, Work } from '@/lib/directus'
 
@@ -15,8 +15,6 @@ interface LibraryViewProps {
 
 export default function LibraryView({ authors }: LibraryViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const shelfRef = useRef<HTMLDivElement>(null)
-  const bookRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Filter and sort authors alphabetically (only those with works)
   const sortedAuthors = useMemo(() => {
@@ -41,29 +39,20 @@ export default function LibraryView({ authors }: LibraryViewProps) {
 
   // Scroll to matching author when search changes
   useEffect(() => {
-    if (matchingAuthor && shelfRef.current) {
-      const bookElement = bookRefs.current.get(matchingAuthor.slug)
-      if (bookElement) {
-        const shelfRect = shelfRef.current.getBoundingClientRect()
-        const bookRect = bookElement.getBoundingClientRect()
-        const scrollLeft = shelfRef.current.scrollLeft + (bookRect.left - shelfRect.left) - (shelfRect.width / 2) + (bookRect.width / 2)
-        
-        shelfRef.current.scrollTo({
-          left: scrollLeft,
-          behavior: 'smooth'
-        })
-      }
+    if (matchingAuthor) {
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        const bookElement = document.getElementById(`book-${matchingAuthor.slug}`)
+        if (bookElement) {
+          bookElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center'
+          })
+        }
+      }, 100)
     }
   }, [matchingAuthor])
-
-  // Register book ref
-  const setBookRef = (slug: string, element: HTMLDivElement | null) => {
-    if (element) {
-      bookRefs.current.set(slug, element)
-    } else {
-      bookRefs.current.delete(slug)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900">
@@ -110,7 +99,6 @@ export default function LibraryView({ authors }: LibraryViewProps) {
         
         {/* Horizontal scrolling shelf */}
         <div
-          ref={shelfRef}
           className="flex gap-3 overflow-x-auto pb-8 px-8 scroll-smooth"
           style={{
             scrollbarWidth: 'thin',
@@ -123,7 +111,7 @@ export default function LibraryView({ authors }: LibraryViewProps) {
           {sortedAuthors.map((author) => (
             <div
               key={author.id}
-              ref={(el) => setBookRef(author.slug, el)}
+              id={`book-${author.slug}`}
             >
               <AuthorBook 
                 author={author} 
