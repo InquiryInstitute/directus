@@ -75,7 +75,7 @@ export default function LibraryView({ authors }: LibraryViewProps) {
           <h1 className="text-4xl font-serif text-amber-100 mb-1 tracking-wide">
             Commonplace
           </h1>
-          <p className="text-amber-200/60 text-sm">Digital Scholarly Library</p>
+          <p className="text-amber-200/60 text-sm">Notebooks of the Learned</p>
         </div>
       </header>
 
