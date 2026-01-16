@@ -49,16 +49,20 @@ export default function LibraryView({ authors }: LibraryViewProps) {
     if (match) {
       // Find the index of the matching author
       const index = sortedAuthors.findIndex(a => a.slug === match.slug)
-      if (index !== -1 && shelfRef.current) {
-        // Each book is about 68px wide (56px + 12px gap)
-        const bookWidth = 68
-        const containerWidth = shelfRef.current.clientWidth
-        const targetScrollLeft = Math.max(0, (index * bookWidth) - (containerWidth / 2) + (bookWidth / 2))
-        
-        shelfRef.current.scrollTo({
-          left: targetScrollLeft,
-          behavior: 'smooth'
-        })
+      if (index !== -1) {
+        // Use setTimeout to ensure state update and DOM are ready
+        setTimeout(() => {
+          const shelf = shelfRef.current
+          if (shelf) {
+            // Each book is about 68px wide (56px + 12px gap)  
+            const bookWidth = 68
+            const containerWidth = shelf.clientWidth
+            const targetScrollLeft = Math.max(0, (index * bookWidth) - (containerWidth / 2) + (bookWidth / 2))
+            
+            // Force scroll
+            shelf.scrollLeft = targetScrollLeft
+          }
+        }, 50)
       }
     }
   }
