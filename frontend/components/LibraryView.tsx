@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { Author, Work } from '@/lib/directus'
 
@@ -15,6 +15,7 @@ interface LibraryViewProps {
 
 export default function LibraryView({ authors }: LibraryViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const shelfRef = useRef<HTMLDivElement>(null)
 
   // Filter and sort authors alphabetically (only those with works)
   const sortedAuthors = useMemo(() => {
@@ -39,18 +40,26 @@ export default function LibraryView({ authors }: LibraryViewProps) {
 
   // Scroll to matching author when search changes
   useEffect(() => {
-    if (matchingAuthor) {
+    if (matchingAuthor && shelfRef.current) {
       // Use setTimeout to ensure DOM is ready
       setTimeout(() => {
         const bookElement = document.getElementById(`book-${matchingAuthor.slug}`)
-        if (bookElement) {
-          bookElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'center'
+        const shelf = shelfRef.current
+        if (bookElement && shelf) {
+          const bookRect = bookElement.getBoundingClientRect()
+          const shelfRect = shelf.getBoundingClientRect()
+          
+          // Calculate scroll position to center the book
+          const bookCenter = bookRect.left + bookRect.width / 2
+          const shelfCenter = shelfRect.left + shelfRect.width / 2
+          const scrollOffset = bookCenter - shelfCenter
+          
+          shelf.scrollBy({
+            left: scrollOffset,
+            behavior: 'smooth'
           })
         }
-      }, 100)
+      }, 150)
     }
   }, [matchingAuthor])
 
@@ -99,6 +108,7 @@ export default function LibraryView({ authors }: LibraryViewProps) {
         
         {/* Horizontal scrolling shelf */}
         <div
+          ref={shelfRef}
           className="flex gap-3 overflow-x-auto pb-8 px-8 scroll-smooth"
           style={{
             scrollbarWidth: 'thin',
