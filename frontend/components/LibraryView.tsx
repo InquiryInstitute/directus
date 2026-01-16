@@ -46,26 +46,20 @@ export default function LibraryView({ authors }: LibraryViewProps) {
     
     // Find and scroll to matching author
     const match = findMatchingAuthor(value)
-    if (match && shelfRef.current) {
-      // Small delay to let React update
-      requestAnimationFrame(() => {
-        const bookElement = document.getElementById(`book-${match.slug}`)
-        const shelf = shelfRef.current
-        if (bookElement && shelf) {
-          const bookRect = bookElement.getBoundingClientRect()
-          const shelfRect = shelf.getBoundingClientRect()
-          
-          // Calculate scroll position to center the book
-          const bookCenter = bookRect.left + bookRect.width / 2
-          const shelfCenter = shelfRect.left + shelfRect.width / 2
-          const scrollOffset = bookCenter - shelfCenter
-          
-          shelf.scrollBy({
-            left: scrollOffset,
-            behavior: 'smooth'
-          })
-        }
-      })
+    if (match) {
+      // Find the index of the matching author
+      const index = sortedAuthors.findIndex(a => a.slug === match.slug)
+      if (index !== -1 && shelfRef.current) {
+        // Each book is about 68px wide (56px + 12px gap)
+        const bookWidth = 68
+        const containerWidth = shelfRef.current.clientWidth
+        const targetScrollLeft = Math.max(0, (index * bookWidth) - (containerWidth / 2) + (bookWidth / 2))
+        
+        shelfRef.current.scrollTo({
+          left: targetScrollLeft,
+          behavior: 'smooth'
+        })
+      }
     }
   }
 
