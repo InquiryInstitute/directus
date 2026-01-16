@@ -30,7 +30,6 @@ interface CommonplaceBookProps {
 // Format date in a handwritten journal style
 function formatJournalDate(dateStr?: string): string {
   if (!dateStr) {
-    // Return a plausible historical-looking date
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                     'July', 'August', 'September', 'October', 'November', 'December']
     const month = months[Math.floor(Math.random() * 12)]
@@ -53,12 +52,11 @@ function formatJournalDate(dateStr?: string): string {
 }
 
 export default function CommonplaceBook({ author, works }: CommonplaceBookProps) {
-  const bookRef = useRef<HTMLDivElement>(null)
-  const [currentPage, setCurrentPage] = useState(0)
+  const [currentSpread, setCurrentSpread] = useState(0)
   const [isFlipping, setIsFlipping] = useState(false)
+  const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null)
   const [pages, setPages] = useState<string[]>([])
 
-  // Get display name (last name or single name)
   const getDisplayName = (name: string): string => {
     const parts = name.split(' ')
     return parts.length === 1 ? parts[0] : parts[parts.length - 1]
@@ -105,7 +103,6 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
     works.forEach((work) => {
       const workDate = formatJournalDate(work.publication_date || work.published_at)
       
-      // Title page for each work
       allPages.push(`
         <div class="work-title-page">
           <div class="work-date">${workDate}</div>
@@ -115,10 +112,9 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         </div>
       `)
 
-      // Content pages with date headers
       if (work.content_md) {
         const contentPages = splitContentIntoPages(work.content_md)
-        contentPages.forEach((pageContent, pageIndex) => {
+        contentPages.forEach((pageContent) => {
           const html = marked(pageContent) as string
           allPages.push(`
             <div class="content-page">
@@ -139,31 +135,47 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
       </div>
     `)
 
+    // Ensure even number of pages
+    if (allPages.length % 2 !== 0) {
+      allPages.push('<div class="empty-page"></div>')
+    }
+
     setPages(allPages)
   }, [author, works])
 
+  const totalSpreads = Math.ceil(pages.length / 2)
+
   const flipNext = useCallback(() => {
-    if (currentPage < pages.length - 2 && !isFlipping) {
+    if (currentSpread < totalSpreads - 1 && !isFlipping) {
+      setFlipDirection('next')
       setIsFlipping(true)
-      setCurrentPage(prev => prev + 2)
-      setTimeout(() => setIsFlipping(false), 500)
+      setTimeout(() => {
+        setCurrentSpread(prev => prev + 1)
+        setIsFlipping(false)
+        setFlipDirection(null)
+      }, 600)
     }
-  }, [currentPage, pages.length, isFlipping])
+  }, [currentSpread, totalSpreads, isFlipping])
 
   const flipPrev = useCallback(() => {
-    if (currentPage > 0 && !isFlipping) {
+    if (currentSpread > 0 && !isFlipping) {
+      setFlipDirection('prev')
       setIsFlipping(true)
-      setCurrentPage(prev => prev - 2)
-      setTimeout(() => setIsFlipping(false), 500)
+      setTimeout(() => {
+        setCurrentSpread(prev => prev - 1)
+        setIsFlipping(false)
+        setFlipDirection(null)
+      }, 600)
     }
-  }, [currentPage, isFlipping])
+  }, [currentSpread, isFlipping])
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault()
         flipNext()
       } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
         flipPrev()
       }
     }
@@ -171,114 +183,239 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [flipNext, flipPrev])
 
-  const leftPage = pages[currentPage] || ''
-  const rightPage = pages[currentPage + 1] || ''
+  const leftPageIndex = currentSpread * 2
+  const rightPageIndex = currentSpread * 2 + 1
+  const leftPage = pages[leftPageIndex] || ''
+  const rightPage = pages[rightPageIndex] || ''
+  
+  // Pages for animation
+  const nextLeftPage = pages[leftPageIndex + 2] || ''
+  const prevRightPage = pages[rightPageIndex - 2] || ''
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 py-8">
-      {/* Google Fonts for handwriting */}
+    <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 py-8 overflow-hidden">
       <link 
         href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" 
         rel="stylesheet" 
       />
       
-      {/* Header */}
       <div className="max-w-7xl mx-auto px-6 mb-6">
         <Link href="/" className="text-amber-400 hover:text-amber-300 text-sm inline-flex items-center gap-2">
           ← Back to Library
         </Link>
       </div>
 
-      {/* Book Container */}
-      <div className="flex justify-center">
-        <div 
-          ref={bookRef}
-          className="book-wrapper relative"
-          style={{ perspective: '2000px' }}
-        >
-          {/* Book */}
-          <div className="book flex shadow-2xl" style={{ transformStyle: 'preserve-3d' }}>
-            {/* Left Page */}
+      <div className="flex justify-center items-center">
+        <div className="book-container" style={{ perspective: '2000px' }}>
+          <div className="book-wrapper relative flex">
+            {/* Left Page (static) */}
             <div 
-              className="page left-page bg-amber-50 relative overflow-hidden rounded-l-sm"
+              className="page-static left-page"
               onClick={flipPrev}
-              style={{ 
-                width: '420px', 
-                height: '560px',
-                cursor: currentPage > 0 ? 'pointer' : 'default'
-              }}
+              style={{ cursor: currentSpread > 0 ? 'pointer' : 'default' }}
             >
-              <div 
-                className="page-content h-full overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: leftPage }}
-              />
-              {currentPage > 0 && (
-                <div className="absolute bottom-4 left-4 text-amber-400/60 text-xs font-sans">
-                  ← Previous
-                </div>
-              )}
-              <div className="absolute bottom-4 right-4 text-amber-600/40 text-xs font-sans">
-                {currentPage + 1}
-              </div>
-              {/* Page edge shadow */}
-              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black/10 to-transparent pointer-events-none" />
+              <div className="page-inner" dangerouslySetInnerHTML={{ __html: leftPage }} />
+              <div className="page-number left">{leftPageIndex + 1}</div>
+              {currentSpread > 0 && <div className="page-hint left">← Click to turn</div>}
             </div>
 
             {/* Spine */}
-            <div 
-              className="spine bg-gradient-to-r from-amber-900 via-amber-800 to-amber-900"
-              style={{ width: '30px', height: '560px' }}
-            />
+            <div className="book-spine" />
 
-            {/* Right Page */}
+            {/* Right Page (static) */}
             <div 
-              className="page right-page bg-amber-50 relative overflow-hidden rounded-r-sm"
+              className="page-static right-page"
               onClick={flipNext}
-              style={{ 
-                width: '420px', 
-                height: '560px',
-                cursor: currentPage < pages.length - 2 ? 'pointer' : 'default'
-              }}
+              style={{ cursor: currentSpread < totalSpreads - 1 ? 'pointer' : 'default' }}
             >
-              <div 
-                className="page-content h-full overflow-hidden"
-                dangerouslySetInnerHTML={{ __html: rightPage }}
-              />
-              {currentPage < pages.length - 2 && (
-                <div className="absolute bottom-4 right-4 text-amber-400/60 text-xs font-sans">
-                  Next →
-                </div>
-              )}
-              <div className="absolute bottom-4 left-4 text-amber-600/40 text-xs font-sans">
-                {currentPage + 2}
-              </div>
-              {/* Page edge shadow */}
-              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-black/10 to-transparent pointer-events-none" />
+              <div className="page-inner" dangerouslySetInnerHTML={{ __html: rightPage }} />
+              <div className="page-number right">{rightPageIndex + 1}</div>
+              {currentSpread < totalSpreads - 1 && <div className="page-hint right">Click to turn →</div>}
             </div>
+
+            {/* Flipping Page Overlay */}
+            {isFlipping && flipDirection === 'next' && (
+              <div className="flipping-page flip-forward">
+                <div className="flip-page-front">
+                  <div className="page-inner" dangerouslySetInnerHTML={{ __html: rightPage }} />
+                </div>
+                <div className="flip-page-back">
+                  <div className="page-inner" dangerouslySetInnerHTML={{ __html: nextLeftPage }} />
+                </div>
+              </div>
+            )}
+
+            {isFlipping && flipDirection === 'prev' && (
+              <div className="flipping-page flip-backward">
+                <div className="flip-page-front">
+                  <div className="page-inner" dangerouslySetInnerHTML={{ __html: prevRightPage }} />
+                </div>
+                <div className="flip-page-back">
+                  <div className="page-inner" dangerouslySetInnerHTML={{ __html: leftPage }} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Navigation hint */}
           <div className="text-center mt-6 text-amber-200/50 text-sm">
-            Click pages or use arrow keys to turn • Page {Math.floor(currentPage/2) + 1} of {Math.ceil(pages.length/2)}
+            Page {currentSpread + 1} of {totalSpreads} • Click pages or use arrow keys
           </div>
         </div>
       </div>
 
-      {/* Page styles */}
       <style jsx global>{`
-        .page-content {
-          padding: 2rem 2.5rem;
-          font-family: 'Kalam', cursive;
-          color: #2c1810;
-          line-height: 1.9;
+        .book-container {
+          user-select: none;
         }
 
+        .book-wrapper {
+          position: relative;
+          transform-style: preserve-3d;
+        }
+
+        .page-static {
+          width: 400px;
+          height: 540px;
+          background: linear-gradient(to right, #fef7ed 0%, #fefce8 50%, #fef7ed 100%);
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .page-static.left-page {
+          border-radius: 3px 0 0 3px;
+          background: linear-gradient(to left, #f5f0e6 0%, #fefce8 20%, #fef7ed 100%);
+          box-shadow: inset -10px 0 20px -10px rgba(0,0,0,0.1);
+        }
+
+        .page-static.right-page {
+          border-radius: 0 3px 3px 0;
+          background: linear-gradient(to right, #f5f0e6 0%, #fefce8 20%, #fef7ed 100%);
+          box-shadow: inset 10px 0 20px -10px rgba(0,0,0,0.1);
+        }
+
+        .book-spine {
+          width: 24px;
+          height: 540px;
+          background: linear-gradient(to right, 
+            #78350f 0%, 
+            #92400e 20%, 
+            #a16207 50%, 
+            #92400e 80%, 
+            #78350f 100%
+          );
+          box-shadow: 0 0 15px rgba(0,0,0,0.4);
+        }
+
+        .page-inner {
+          padding: 2rem 2.5rem;
+          height: 100%;
+          overflow: hidden;
+          font-family: 'Kalam', cursive;
+          color: #2c1810;
+          line-height: 1.8;
+          font-size: 0.95rem;
+        }
+
+        .page-number {
+          position: absolute;
+          bottom: 1rem;
+          font-family: 'Caveat', cursive;
+          font-size: 0.9rem;
+          color: #92400e;
+        }
+
+        .page-number.left { right: 1.5rem; }
+        .page-number.right { left: 1.5rem; }
+
+        .page-hint {
+          position: absolute;
+          bottom: 1rem;
+          font-family: sans-serif;
+          font-size: 0.7rem;
+          color: #d4a373;
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+
+        .page-hint.left { left: 1rem; }
+        .page-hint.right { right: 1rem; }
+
+        .page-static:hover .page-hint {
+          opacity: 1;
+        }
+
+        /* Flipping animation */
+        .flipping-page {
+          position: absolute;
+          width: 400px;
+          height: 540px;
+          transform-style: preserve-3d;
+          transform-origin: left center;
+          z-index: 10;
+        }
+
+        .flipping-page.flip-forward {
+          left: 424px;
+          animation: flipForward 0.6s ease-in-out forwards;
+        }
+
+        .flipping-page.flip-backward {
+          left: 0;
+          transform-origin: right center;
+          animation: flipBackward 0.6s ease-in-out forwards;
+        }
+
+        .flip-page-front,
+        .flip-page-back {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          backface-visibility: hidden;
+          background: linear-gradient(to right, #fef7ed 0%, #fefce8 50%, #fef7ed 100%);
+          box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+          overflow: hidden;
+        }
+
+        .flip-page-back {
+          transform: rotateY(180deg);
+        }
+
+        @keyframes flipForward {
+          0% {
+            transform: rotateY(0deg);
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+          }
+          50% {
+            box-shadow: -20px 0 40px rgba(0,0,0,0.3);
+          }
+          100% {
+            transform: rotateY(-180deg);
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+          }
+        }
+
+        @keyframes flipBackward {
+          0% {
+            transform: rotateY(0deg);
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+          }
+          50% {
+            box-shadow: 20px 0 40px rgba(0,0,0,0.3);
+          }
+          100% {
+            transform: rotateY(180deg);
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+          }
+        }
+
+        /* Page content styles */
         .page-date-header {
           font-family: 'Caveat', cursive;
           font-size: 1.1rem;
           color: #78350f;
           text-align: right;
-          margin-bottom: 1rem;
+          margin-bottom: 0.75rem;
           padding-bottom: 0.5rem;
           border-bottom: 1px solid #d4a373;
           font-weight: 500;
@@ -292,10 +429,11 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
           height: 100%;
           text-align: center;
           background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%);
+          padding: 2rem;
         }
 
         .cover-page h1 {
-          font-size: 3rem;
+          font-size: 2.8rem;
           font-weight: 700;
           color: #78350f;
           margin-bottom: 0.5rem;
@@ -303,7 +441,7 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .cover-page .subtitle {
-          font-size: 1.4rem;
+          font-size: 1.3rem;
           color: #92400e;
           font-style: italic;
           margin-bottom: 2rem;
@@ -311,25 +449,21 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .cover-page .author-full {
-          font-size: 1.2rem;
+          font-size: 1.1rem;
           color: #a16207;
           margin-top: 3rem;
           font-family: 'Caveat', cursive;
         }
 
         .cover-ornament {
-          width: 120px;
+          width: 100px;
           height: 2px;
           background: linear-gradient(90deg, transparent, #92400e, transparent);
           margin: 1rem 0;
         }
 
-        .toc-page {
-          padding: 2rem 2.5rem;
-        }
-
         .toc-page h2 {
-          font-size: 1.8rem;
+          font-size: 1.6rem;
           color: #78350f;
           margin-bottom: 1.5rem;
           text-align: center;
@@ -341,19 +475,16 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
           list-style: none;
           padding: 0;
           margin: 0;
-          font-family: 'Kalam', cursive;
         }
 
         .toc-list li {
           display: flex;
           align-items: baseline;
-          margin-bottom: 0.75rem;
-          font-size: 1rem;
+          margin-bottom: 0.6rem;
+          font-size: 0.95rem;
         }
 
-        .toc-title {
-          color: #2c1810;
-        }
+        .toc-title { color: #2c1810; }
 
         .toc-dots {
           flex: 1;
@@ -363,26 +494,15 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
 
         .toc-page-num {
           color: #92400e;
-          font-size: 0.9rem;
-        }
-
-        .bio-page {
-          padding: 2rem 2.5rem;
+          font-size: 0.85rem;
         }
 
         .bio-page h2 {
-          font-size: 1.6rem;
+          font-size: 1.5rem;
           color: #78350f;
           margin-bottom: 1rem;
           font-family: 'Caveat', cursive;
           font-weight: 600;
-        }
-
-        .bio-page p {
-          font-size: 1.1rem;
-          line-height: 1.9;
-          color: #2c1810;
-          font-family: 'Kalam', cursive;
         }
 
         .work-title-page {
@@ -397,14 +517,13 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
 
         .work-title-page .work-date {
           font-family: 'Caveat', cursive;
-          font-size: 1.2rem;
+          font-size: 1.1rem;
           color: #92400e;
-          margin-bottom: 2rem;
-          font-weight: 500;
+          margin-bottom: 1.5rem;
         }
 
         .work-title-page h2 {
-          font-size: 1.8rem;
+          font-size: 1.6rem;
           color: #78350f;
           margin-bottom: 1rem;
           font-family: 'Caveat', cursive;
@@ -413,40 +532,33 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .work-type {
-          font-size: 1rem;
+          font-size: 0.9rem;
           color: #92400e;
           text-transform: capitalize;
           margin-bottom: 1rem;
-          font-family: 'Kalam', cursive;
         }
 
         .work-abstract {
-          font-size: 1rem;
+          font-size: 0.9rem;
           color: #5c4033;
           font-style: italic;
-          max-width: 320px;
-          line-height: 1.7;
-          font-family: 'Kalam', cursive;
-        }
-
-        .content-page {
-          font-size: 1rem;
-          line-height: 1.9;
+          max-width: 300px;
+          line-height: 1.6;
         }
 
         .content-page h1, .content-page h2, .content-page h3 {
           color: #78350f;
-          margin: 1rem 0 0.5rem;
+          margin: 0.75rem 0 0.5rem;
           font-family: 'Caveat', cursive;
           font-weight: 600;
         }
 
-        .content-page h1 { font-size: 1.6rem; }
-        .content-page h2 { font-size: 1.4rem; }
-        .content-page h3 { font-size: 1.2rem; }
+        .content-page h1 { font-size: 1.5rem; }
+        .content-page h2 { font-size: 1.3rem; }
+        .content-page h3 { font-size: 1.1rem; }
 
         .content-page p {
-          margin-bottom: 0.75rem;
+          margin-bottom: 0.6rem;
           text-indent: 1.5em;
         }
 
@@ -457,18 +569,9 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         .content-page blockquote {
           border-left: 3px solid #d4a373;
           padding-left: 1rem;
-          margin: 1rem 0;
+          margin: 0.75rem 0;
           color: #5c4033;
           font-style: italic;
-        }
-
-        .content-page ul, .content-page ol {
-          margin-left: 1.5rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .content-page li {
-          margin-bottom: 0.25rem;
         }
 
         .back-cover {
@@ -481,27 +584,26 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .back-cover .finis {
-          font-size: 1.6rem;
+          font-size: 1.5rem;
           color: #92400e;
           font-style: italic;
           font-family: 'Caveat', cursive;
         }
 
-        /* Ink effect for handwriting */
-        .content-page, .bio-page p, .toc-list {
-          text-shadow: 0.5px 0.5px 0 rgba(44, 24, 16, 0.1);
+        .empty-page {
+          height: 100%;
+          background: #fefce8;
         }
       `}</style>
     </div>
   )
 }
 
-// Split markdown content into page-sized chunks
 function splitContentIntoPages(markdown: string): string[] {
   const chunks = markdown.split(/\n\n+/)
   const pages: string[] = []
   let currentPage = ''
-  const maxChars = 1000 // Slightly fewer chars per page for handwriting font (larger)
+  const maxChars = 900
 
   chunks.forEach((chunk) => {
     if (currentPage.length + chunk.length > maxChars && currentPage.length > 0) {
