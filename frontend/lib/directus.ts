@@ -47,11 +47,13 @@ export type Author = Person
 export async function getAuthors() {
   // Use Supabase Edge Function for better performance
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   const response = await fetch(
     `${supabaseUrl}/functions/v1/get-flipbook?author=all`,
     {
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
       },
     }
   )
@@ -90,11 +92,13 @@ export async function getAuthorBySlug(slug: string) {
 export async function getWorksByAuthor(authorId: string) {
   // Use Supabase Edge Function
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   const response = await fetch(
     `${supabaseUrl}/functions/v1/get-flipbook?author=${authorId}`,
     {
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
       },
     }
   )
