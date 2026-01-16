@@ -2,10 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Author, Work, getWorksByAuthor } from '@/lib/directus'
+import { Author, Work } from '@/lib/directus'
+
+// Extended Author type that includes works from the API
+interface AuthorWithWorks extends Author {
+  works?: Work[]
+}
 
 interface LibraryViewProps {
-  authors: Author[]
+  authors: AuthorWithWorks[]
 }
 
 export default function LibraryView({ authors }: LibraryViewProps) {
@@ -106,55 +111,14 @@ export default function LibraryView({ authors }: LibraryViewProps) {
 }
 
 interface AuthorBookshelfProps {
-  author: Author
+  author: AuthorWithWorks
   isSelected: boolean
   onSelect: () => void
 }
 
 function AuthorBookshelf({ author, isSelected, onSelect }: AuthorBookshelfProps) {
-  const [works, setWorks] = useState<Work[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadWorks() {
-      try {
-        // Use author slug instead of ID for Edge Function
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
-        const response = await fetch(
-          `${supabaseUrl}/functions/v1/get-flipbook?author=${author.slug}`
-        )
-        if (response.ok) {
-          const data = await response.json()
-          setWorks(data.works || [])
-        } else {
-          // Fallback to Directus
-          const data = await getWorksByAuthor(author.id)
-          setWorks(data)
-        }
-      } catch (error) {
-        console.error('Failed to load works:', error)
-        // Fallback to Directus
-        try {
-          const data = await getWorksByAuthor(author.id)
-          setWorks(data)
-        } catch (e) {
-          console.error('Directus fallback also failed:', e)
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadWorks()
-  }, [author.id, author.slug])
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center space-y-2">
-        <div className="w-16 h-48 bg-amber-200 animate-pulse rounded" />
-        <div className="text-sm text-amber-600">Loading...</div>
-      </div>
-    )
-  }
+  // Works are already included in the author object from the get-flipbook?author=all call
+  const works = author.works || []
 
   if (works.length === 0) {
     return null
