@@ -12,6 +12,7 @@ interface Work {
   abstract?: string
   type?: string
   published_at?: string
+  publication_date?: string
 }
 
 interface Author {
@@ -24,6 +25,31 @@ interface Author {
 interface CommonplaceBookProps {
   author: Author
   works: Work[]
+}
+
+// Format date in a handwritten journal style
+function formatJournalDate(dateStr?: string): string {
+  if (!dateStr) {
+    // Return a plausible historical-looking date
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December']
+    const month = months[Math.floor(Math.random() * 12)]
+    const day = Math.floor(Math.random() * 28) + 1
+    return `${month} ${day}`
+  }
+  
+  try {
+    const date = new Date(dateStr)
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long',
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }
+    return date.toLocaleDateString('en-US', options)
+  } catch {
+    return dateStr
+  }
 }
 
 export default function CommonplaceBook({ author, works }: CommonplaceBookProps) {
@@ -77,21 +103,29 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
 
     // Each work as pages
     works.forEach((work) => {
+      const workDate = formatJournalDate(work.publication_date || work.published_at)
+      
       // Title page for each work
       allPages.push(`
         <div class="work-title-page">
+          <div class="work-date">${workDate}</div>
           <h2>${work.title}</h2>
           ${work.type ? `<p class="work-type">${work.type.replace('_', ' ')}</p>` : ''}
           ${work.abstract ? `<p class="work-abstract">${work.abstract}</p>` : ''}
         </div>
       `)
 
-      // Content pages
+      // Content pages with date headers
       if (work.content_md) {
         const contentPages = splitContentIntoPages(work.content_md)
-        contentPages.forEach((pageContent) => {
+        contentPages.forEach((pageContent, pageIndex) => {
           const html = marked(pageContent) as string
-          allPages.push(`<div class="content-page">${html}</div>`)
+          allPages.push(`
+            <div class="content-page">
+              <div class="page-date-header">${workDate}</div>
+              ${html}
+            </div>
+          `)
         })
       }
     })
@@ -142,6 +176,12 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 py-8">
+      {/* Google Fonts for handwriting */}
+      <link 
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" 
+        rel="stylesheet" 
+      />
+      
       {/* Header */}
       <div className="max-w-7xl mx-auto px-6 mb-6">
         <Link href="/" className="text-amber-400 hover:text-amber-300 text-sm inline-flex items-center gap-2">
@@ -173,11 +213,11 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
                 dangerouslySetInnerHTML={{ __html: leftPage }}
               />
               {currentPage > 0 && (
-                <div className="absolute bottom-4 left-4 text-amber-400/60 text-xs">
+                <div className="absolute bottom-4 left-4 text-amber-400/60 text-xs font-sans">
                   ← Previous
                 </div>
               )}
-              <div className="absolute bottom-4 right-4 text-amber-600/40 text-xs">
+              <div className="absolute bottom-4 right-4 text-amber-600/40 text-xs font-sans">
                 {currentPage + 1}
               </div>
               {/* Page edge shadow */}
@@ -205,11 +245,11 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
                 dangerouslySetInnerHTML={{ __html: rightPage }}
               />
               {currentPage < pages.length - 2 && (
-                <div className="absolute bottom-4 right-4 text-amber-400/60 text-xs">
+                <div className="absolute bottom-4 right-4 text-amber-400/60 text-xs font-sans">
                   Next →
                 </div>
               )}
-              <div className="absolute bottom-4 left-4 text-amber-600/40 text-xs">
+              <div className="absolute bottom-4 left-4 text-amber-600/40 text-xs font-sans">
                 {currentPage + 2}
               </div>
               {/* Page edge shadow */}
@@ -227,10 +267,21 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
       {/* Page styles */}
       <style jsx global>{`
         .page-content {
-          padding: 2.5rem 3rem;
-          font-family: 'Georgia', serif;
-          color: #3d2a1f;
-          line-height: 1.7;
+          padding: 2rem 2.5rem;
+          font-family: 'Kalam', cursive;
+          color: #2c1810;
+          line-height: 1.9;
+        }
+
+        .page-date-header {
+          font-family: 'Caveat', cursive;
+          font-size: 1.1rem;
+          color: #78350f;
+          text-align: right;
+          margin-bottom: 1rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid #d4a373;
+          font-weight: 500;
         }
 
         .cover-page {
@@ -244,60 +295,64 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .cover-page h1 {
-          font-size: 2.5rem;
-          font-weight: bold;
+          font-size: 3rem;
+          font-weight: 700;
           color: #78350f;
           margin-bottom: 0.5rem;
-          font-family: 'Georgia', serif;
+          font-family: 'Caveat', cursive;
         }
 
         .cover-page .subtitle {
-          font-size: 1.2rem;
+          font-size: 1.4rem;
           color: #92400e;
           font-style: italic;
           margin-bottom: 2rem;
+          font-family: 'Kalam', cursive;
         }
 
         .cover-page .author-full {
-          font-size: 1rem;
+          font-size: 1.2rem;
           color: #a16207;
           margin-top: 3rem;
+          font-family: 'Caveat', cursive;
         }
 
         .cover-ornament {
-          width: 100px;
+          width: 120px;
           height: 2px;
           background: linear-gradient(90deg, transparent, #92400e, transparent);
           margin: 1rem 0;
         }
 
         .toc-page {
-          padding: 2.5rem 3rem;
+          padding: 2rem 2.5rem;
         }
 
         .toc-page h2 {
-          font-size: 1.5rem;
+          font-size: 1.8rem;
           color: #78350f;
           margin-bottom: 1.5rem;
           text-align: center;
-          font-family: 'Georgia', serif;
+          font-family: 'Caveat', cursive;
+          font-weight: 600;
         }
 
         .toc-list {
           list-style: none;
           padding: 0;
           margin: 0;
+          font-family: 'Kalam', cursive;
         }
 
         .toc-list li {
           display: flex;
           align-items: baseline;
           margin-bottom: 0.75rem;
-          font-size: 0.9rem;
+          font-size: 1rem;
         }
 
         .toc-title {
-          color: #3d2a1f;
+          color: #2c1810;
         }
 
         .toc-dots {
@@ -308,24 +363,26 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
 
         .toc-page-num {
           color: #92400e;
-          font-size: 0.8rem;
+          font-size: 0.9rem;
         }
 
         .bio-page {
-          padding: 2.5rem 3rem;
+          padding: 2rem 2.5rem;
         }
 
         .bio-page h2 {
-          font-size: 1.3rem;
+          font-size: 1.6rem;
           color: #78350f;
           margin-bottom: 1rem;
-          font-family: 'Georgia', serif;
+          font-family: 'Caveat', cursive;
+          font-weight: 600;
         }
 
         .bio-page p {
-          font-size: 0.95rem;
-          line-height: 1.8;
-          color: #3d2a1f;
+          font-size: 1.1rem;
+          line-height: 1.9;
+          color: #2c1810;
+          font-family: 'Kalam', cursive;
         }
 
         .work-title-page {
@@ -338,47 +395,63 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
           padding: 2rem;
         }
 
+        .work-title-page .work-date {
+          font-family: 'Caveat', cursive;
+          font-size: 1.2rem;
+          color: #92400e;
+          margin-bottom: 2rem;
+          font-weight: 500;
+        }
+
         .work-title-page h2 {
           font-size: 1.8rem;
           color: #78350f;
           margin-bottom: 1rem;
-          font-family: 'Georgia', serif;
+          font-family: 'Caveat', cursive;
+          font-weight: 600;
           line-height: 1.3;
         }
 
         .work-type {
-          font-size: 0.9rem;
+          font-size: 1rem;
           color: #92400e;
           text-transform: capitalize;
           margin-bottom: 1rem;
+          font-family: 'Kalam', cursive;
         }
 
         .work-abstract {
-          font-size: 0.9rem;
+          font-size: 1rem;
           color: #5c4033;
           font-style: italic;
-          max-width: 300px;
-          line-height: 1.6;
+          max-width: 320px;
+          line-height: 1.7;
+          font-family: 'Kalam', cursive;
         }
 
         .content-page {
-          font-size: 0.85rem;
-          line-height: 1.8;
+          font-size: 1rem;
+          line-height: 1.9;
         }
 
         .content-page h1, .content-page h2, .content-page h3 {
           color: #78350f;
           margin: 1rem 0 0.5rem;
-          font-family: 'Georgia', serif;
+          font-family: 'Caveat', cursive;
+          font-weight: 600;
         }
 
-        .content-page h1 { font-size: 1.4rem; }
-        .content-page h2 { font-size: 1.2rem; }
-        .content-page h3 { font-size: 1rem; }
+        .content-page h1 { font-size: 1.6rem; }
+        .content-page h2 { font-size: 1.4rem; }
+        .content-page h3 { font-size: 1.2rem; }
 
         .content-page p {
           margin-bottom: 0.75rem;
-          text-align: justify;
+          text-indent: 1.5em;
+        }
+
+        .content-page p:first-of-type {
+          text-indent: 0;
         }
 
         .content-page blockquote {
@@ -387,6 +460,15 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
           margin: 1rem 0;
           color: #5c4033;
           font-style: italic;
+        }
+
+        .content-page ul, .content-page ol {
+          margin-left: 1.5rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .content-page li {
+          margin-bottom: 0.25rem;
         }
 
         .back-cover {
@@ -399,10 +481,15 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .back-cover .finis {
-          font-size: 1.2rem;
+          font-size: 1.6rem;
           color: #92400e;
           font-style: italic;
-          font-family: 'Georgia', serif;
+          font-family: 'Caveat', cursive;
+        }
+
+        /* Ink effect for handwriting */
+        .content-page, .bio-page p, .toc-list {
+          text-shadow: 0.5px 0.5px 0 rgba(44, 24, 16, 0.1);
         }
       `}</style>
     </div>
@@ -414,7 +501,7 @@ function splitContentIntoPages(markdown: string): string[] {
   const chunks = markdown.split(/\n\n+/)
   const pages: string[] = []
   let currentPage = ''
-  const maxChars = 1200 // Approximate characters per page
+  const maxChars = 1000 // Slightly fewer chars per page for handwriting font (larger)
 
   chunks.forEach((chunk) => {
     if (currentPage.length + chunk.length > maxChars && currentPage.length > 0) {

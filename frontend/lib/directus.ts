@@ -38,6 +38,7 @@ export interface Work {
     pages: Array<{ n: number; src: string }>
   }
   published_at?: string
+  publication_date?: string
 }
 
 // Helper functions
