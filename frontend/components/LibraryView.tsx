@@ -154,23 +154,33 @@ interface BookSpineProps {
 function BookSpine({ work, author, onClick }: BookSpineProps) {
   const spineColor = getSpineColor(work.type)
   
+  // Format author name as "a.FirstName" (e.g., "a.Plato", "a.Darwin")
+  const formatAuthorName = (name: string): string => {
+    // Extract first name or single name
+    const firstName = name.split(' ')[0]
+    return `a.${firstName}`
+  }
+  
+  const spineLabel = formatAuthorName(author.name)
+  
   return (
     <Link
       href={`/book?slug=${work.slug}`}
       onClick={onClick}
       className="group relative"
+      title={work.title}
     >
       <div
         className="w-16 h-64 bg-gradient-to-r from-amber-700 to-amber-800 rounded-sm shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
         style={{ backgroundColor: spineColor }}
       >
-        {/* Spine Text (Vertical) */}
+        {/* Spine Text (Vertical) - Author name */}
         <div className="absolute inset-0 flex items-center justify-center p-2">
           <div
-            className="text-white font-serif text-xs writing-vertical-rl transform rotate-180 text-center"
+            className="text-white font-serif text-sm writing-vertical-rl transform rotate-180 text-center font-medium tracking-wide"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
-            {work.title}
+            {spineLabel}
           </div>
         </div>
 
