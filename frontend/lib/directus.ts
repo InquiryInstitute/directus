@@ -45,19 +45,45 @@ export interface Work {
 export type Author = Person
 
 export async function getAuthors() {
-  // Use Supabase Edge Function for better performance
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  const response = await fetch(
-    `${supabaseUrl}/functions/v1/get-flipbook?author=all`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-    }
-  )
-  if (!response.ok) {
+  // Use Supabase REST API directly
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co'
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_L5A4YuZm5vF4o1ubDln3Dw_uRqnGsLc'
+  
+  try {
+    // Get persons with public_domain=true and kind in ('faculty', 'external_author')
+    const personsResponse = await fetch(
+      `${supabaseUrl}/rest/v1/persons?select=id,name,slug,kind,public_domain&public_domain=eq.true&kind=in.(faculty,external_author)`,
+      {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+      }
+    )
+    
+    if (!personsResponse.ok) throw new Error('Failed to fetch persons')
+    const persons = await personsResponse.json()
+    
+    // Get published works for each person
+    const authorsWithWorks = await Promise.all(
+      persons.map(async (person: Person) => {
+        const worksResponse = await fetch(
+          `${supabaseUrl}/rest/v1/works?select=id,title,slug,cover_image,status,visibility&primary_author_id=eq.${person.id}&status=eq.published&visibility=eq.public`,
+          {
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+            },
+          }
+        )
+        const works = worksResponse.ok ? await worksResponse.json() : []
+        return { ...person, works }
+      })
+    )
+    
+    return authorsWithWorks
+  } catch (error) {
+    console.error('Failed to fetch from Supabase:', error)
     // Fallback to Directus
     const directusResponse = await fetch(
       `${directusUrl}/items/persons?filter[kind][_eq]=faculty&filter[public_domain][_eq]=true`,
@@ -71,8 +97,6 @@ export async function getAuthors() {
     const data = await directusResponse.json()
     return data.data as Person[]
   }
-  const data = await response.json()
-  return data.authors || []
 }
 
 export async function getAuthorBySlug(slug: string) {
@@ -91,7 +115,7 @@ export async function getAuthorBySlug(slug: string) {
 
 export async function getWorksByAuthor(authorId: string) {
   // Use Supabase Edge Function
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co'
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co'
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   const response = await fetch(
     `${supabaseUrl}/functions/v1/get-flipbook?author=${authorId}`,
