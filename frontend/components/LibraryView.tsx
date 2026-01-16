@@ -164,7 +164,6 @@ interface AuthorBookProps {
 }
 
 function AuthorBook({ author, isHighlighted }: AuthorBookProps) {
-  const workCount = author.works?.length || 0
   const spineName = getDisplayName(author.name)
   const spineColor = getAuthorColor(author.slug)
   
@@ -208,14 +207,6 @@ function AuthorBook({ author, isHighlighted }: AuthorBookProps) {
 
         {/* Hover glow effect */}
         <div className="absolute inset-0 bg-amber-400/0 group-hover:bg-amber-400/10 transition-colors" />
-      </div>
-      
-      {/* Work count badge */}
-      <div className={`
-        mt-2 text-xs transition-all
-        ${isHighlighted ? 'text-amber-300' : 'text-amber-200/50'}
-      `}>
-        {workCount}
       </div>
     </Link>
   )
