@@ -100,34 +100,56 @@ export async function getAuthors() {
 }
 
 export async function getAuthorBySlug(slug: string) {
-  const response = await fetch(
-    `${directusUrl}/items/persons?filter[slug][_eq]=${slug}&limit=1`,
-    {
-      headers: {
-        Authorization: `Bearer ${directusToken}`,
-      },
-    }
-  )
-  if (!response.ok) throw new Error('Failed to fetch author')
-  const data = await response.json()
-  return data.data[0] as Person | undefined
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co'
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_L5A4YuZm5vF4o1ubDln3Dw_uRqnGsLc'
+  
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/persons?slug=eq.${slug}&select=*&limit=1`,
+      {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+      }
+    )
+    if (!response.ok) throw new Error('Failed to fetch author')
+    const data = await response.json()
+    return data[0] as Person | undefined
+  } catch (error) {
+    console.error('Supabase fetch failed, falling back to Directus:', error)
+    const response = await fetch(
+      `${directusUrl}/items/persons?filter[slug][_eq]=${slug}&limit=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${directusToken}`,
+        },
+      }
+    )
+    if (!response.ok) throw new Error('Failed to fetch author')
+    const data = await response.json()
+    return data.data[0] as Person | undefined
+  }
 }
 
 export async function getWorksByAuthor(authorId: string) {
-  // Use Supabase Edge Function
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co'
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-  const response = await fetch(
-    `${supabaseUrl}/functions/v1/get-flipbook?author=${authorId}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-    }
-  )
-  if (!response.ok) {
-    // Fallback to Directus
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_L5A4YuZm5vF4o1ubDln3Dw_uRqnGsLc'
+  
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/works?primary_author_id=eq.${authorId}&status=eq.published&visibility=eq.public&select=*`,
+      {
+        headers: {
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+      }
+    )
+    if (!response.ok) throw new Error('Failed to fetch works')
+    return await response.json() as Work[]
+  } catch (error) {
+    console.error('Supabase fetch failed, falling back to Directus:', error)
     const directusResponse = await fetch(
       `${directusUrl}/items/works?filter[primary_author_id][_eq]=${authorId}&filter[status][_eq]=published&filter[visibility][_eq]=public`,
       {
@@ -140,8 +162,6 @@ export async function getWorksByAuthor(authorId: string) {
     const data = await directusResponse.json()
     return data.data as Work[]
   }
-  const data = await response.json()
-  return data.works || []
 }
 
 export async function getWorkBySlug(slug: string) {

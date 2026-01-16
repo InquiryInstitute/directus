@@ -36,14 +36,29 @@ function BookPageContent() {
     }
 
     async function loadWork() {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pilmscrodlitdrygabvo.supabase.co'
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_L5A4YuZm5vF4o1ubDln3Dw_uRqnGsLc'
+      
       try {
+        // Fetch work directly from Supabase REST API
         const response = await fetch(
-          `https://pilmscrodlitdrygabvo.supabase.co/functions/v1/get-flipbook?slug=${slug}`
+          `${supabaseUrl}/rest/v1/works?slug=eq.${slug}&status=eq.published&visibility=eq.public&select=*&limit=1`,
+          {
+            headers: {
+              'apikey': supabaseAnonKey,
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+            },
+          }
         )
         const data = await response.json()
-        setWork(data.work)
+        if (data && data.length > 0) {
+          setWork(data[0])
+        } else {
+          setWork(null)
+        }
       } catch (error) {
         console.error('Failed to load work:', error)
+        setWork(null)
       } finally {
         setLoading(false)
       }

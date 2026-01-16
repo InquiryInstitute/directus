@@ -15,11 +15,12 @@ interface LibraryViewProps {
 
 export default function LibraryView({ authors }: LibraryViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
   const libraryRef = useRef<HTMLDivElement>(null)
 
-  // Filter authors/works based on search
+  // Filter authors based on search (only show authors with works)
   const filteredAuthors = authors.filter(author => {
+    const hasWorks = (author.works?.length || 0) > 0
+    if (!hasWorks) return false
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
     return (
@@ -27,29 +28,6 @@ export default function LibraryView({ authors }: LibraryViewProps) {
       author.slug.toLowerCase().includes(query)
     )
   })
-
-  // Scroll to selected author
-  useEffect(() => {
-    if (selectedAuthor && libraryRef.current) {
-      const element = document.getElementById(`author-${selectedAuthor}`)
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-    }
-  }, [selectedAuthor])
-
-  // Handle search
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value
-    setSearchQuery(query)
-    
-    // Auto-select first match
-    if (query && filteredAuthors.length > 0) {
-      setSelectedAuthor(filteredAuthors[0].slug)
-    } else {
-      setSelectedAuthor(null)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
@@ -68,9 +46,9 @@ export default function LibraryView({ authors }: LibraryViewProps) {
         <div className="relative">
           <input
             type="text"
-            placeholder="Search authors or works..."
+            placeholder="Search authors..."
             value={searchQuery}
-            onChange={handleSearch}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-3 pl-12 text-lg border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
           />
           <svg
@@ -84,19 +62,12 @@ export default function LibraryView({ authors }: LibraryViewProps) {
         </div>
       </div>
 
-      {/* Library Shelf */}
-      <div
-        ref={libraryRef}
-        className="max-w-7xl mx-auto px-6 pb-12"
-      >
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      {/* Library Shelf - One book per author */}
+      <div ref={libraryRef} className="max-w-7xl mx-auto px-6 pb-12">
+        <h2 className="text-xl font-serif text-amber-800 mb-6">Commonplace Books</h2>
+        <div className="flex flex-wrap gap-8 justify-center">
           {filteredAuthors.map((author) => (
-            <AuthorBookshelf
-              key={author.id}
-              author={author}
-              isSelected={selectedAuthor === author.slug}
-              onSelect={() => setSelectedAuthor(author.slug)}
-            />
+            <AuthorBook key={author.id} author={author} />
           ))}
         </div>
 
@@ -110,97 +81,88 @@ export default function LibraryView({ authors }: LibraryViewProps) {
   )
 }
 
-interface AuthorBookshelfProps {
+interface AuthorBookProps {
   author: AuthorWithWorks
-  isSelected: boolean
-  onSelect: () => void
 }
 
-function AuthorBookshelf({ author, isSelected, onSelect }: AuthorBookshelfProps) {
-  // Works are already included in the author object from the get-flipbook?author=all call
-  const works = author.works || []
-
-  if (works.length === 0) {
-    return null
-  }
-
-  return (
-    <div
-      id={`author-${author.slug}`}
-      className={`flex flex-col items-center space-y-2 ${isSelected ? 'ring-4 ring-amber-400 rounded-lg p-2' : ''}`}
-    >
-      {works.map((work) => (
-        <BookSpine
-          key={work.id}
-          work={work}
-          author={author}
-          onClick={onSelect}
-        />
-      ))}
-      <div className="text-center mt-2">
-        <div className="text-sm font-semibold text-amber-900">{author.name}</div>
-        <div className="text-xs text-amber-600">{works.length} {works.length === 1 ? 'work' : 'works'}</div>
-      </div>
-    </div>
-  )
-}
-
-interface BookSpineProps {
-  work: Work
-  author: Author
-  onClick: () => void
-}
-
-function BookSpine({ work, author, onClick }: BookSpineProps) {
-  const spineColor = getSpineColor(work.type)
+function AuthorBook({ author }: AuthorBookProps) {
+  const workCount = author.works?.length || 0
   
-  // Format author name as "a.LastName" (e.g., "a.Plato", "a.Darwin")
-  const formatAuthorName = (name: string): string => {
+  // Format author name for spine (e.g., "Plato", "Darwin")
+  const getSpineName = (name: string): string => {
     const parts = name.split(' ')
     // For single names (Plato, Herodotus), use as-is
     // For multi-word names (Charles Darwin), use last name
-    const displayName = parts.length === 1 ? parts[0] : parts[parts.length - 1]
-    return `a.${displayName}`
+    return parts.length === 1 ? parts[0] : parts[parts.length - 1]
   }
   
-  const spineLabel = formatAuthorName(author.name)
+  const spineName = getSpineName(author.name)
+  const spineColor = getAuthorColor(author.slug)
   
   return (
     <Link
-      href={`/book?slug=${work.slug}`}
-      onClick={onClick}
-      className="group relative"
-      title={work.title}
+      href={`/author/${author.slug}`}
+      className="group flex flex-col items-center"
     >
+      {/* Book Spine */}
       <div
-        className="w-16 h-64 bg-gradient-to-r from-amber-700 to-amber-800 rounded-sm shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+        className="w-20 h-72 rounded-sm shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer relative overflow-hidden"
         style={{ backgroundColor: spineColor }}
       >
-        {/* Spine Text (Vertical) - Author name */}
-        <div className="absolute inset-0 flex items-center justify-center p-2">
+        {/* Decorative top band */}
+        <div className="absolute top-0 left-0 right-0 h-4 bg-black bg-opacity-20" />
+        
+        {/* Spine Text (Vertical) */}
+        <div className="absolute inset-0 flex items-center justify-center p-3">
           <div
-            className="text-white font-serif text-sm writing-vertical-rl transform rotate-180 text-center font-medium tracking-wide"
+            className="text-white font-serif text-base writing-vertical-rl transform rotate-180 text-center font-semibold tracking-wider"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
-            {spineLabel}
+            {spineName}
           </div>
         </div>
+        
+        {/* Decorative bottom band */}
+        <div className="absolute bottom-0 left-0 right-0 h-4 bg-black bg-opacity-20" />
 
         {/* Hover Effect */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity rounded-sm" />
+        <div className="absolute inset-0 bg-white bg-opacity-0 group-hover:bg-opacity-10 transition-opacity" />
+      </div>
+      
+      {/* Work count below spine */}
+      <div className="mt-3 text-center">
+        <div className="text-xs text-amber-600">
+          {workCount} {workCount === 1 ? 'entry' : 'entries'}
+        </div>
       </div>
     </Link>
   )
 }
 
-// Generate spine color based on work type
-function getSpineColor(type: string): string {
-  const colors: Record<string, string> = {
-    essay: '#92400e',      // Amber-800
-    note: '#78350f',       // Amber-900
-    lecture: '#a16207',   // Amber-700
-    fragment_collection: '#854d0e', // Amber-900
-    review_article: '#713f12', // Amber-950
+// Generate unique color for each author based on their slug
+function getAuthorColor(slug: string): string {
+  const colors = [
+    '#7c2d12', // Orange-900
+    '#78350f', // Amber-900
+    '#713f12', // Yellow-900
+    '#365314', // Lime-900
+    '#14532d', // Green-900
+    '#134e4a', // Teal-900
+    '#164e63', // Cyan-900
+    '#0c4a6e', // Sky-900
+    '#1e3a8a', // Blue-900
+    '#312e81', // Indigo-900
+    '#4c1d95', // Violet-900
+    '#581c87', // Purple-900
+    '#701a75', // Fuchsia-900
+    '#831843', // Pink-900
+    '#881337', // Rose-900
+  ]
+  
+  // Simple hash function to pick a color
+  let hash = 0
+  for (let i = 0; i < slug.length; i++) {
+    hash = slug.charCodeAt(i) + ((hash << 5) - hash)
   }
-  return colors[type] || '#92400e'
+  return colors[Math.abs(hash) % colors.length]
 }
