@@ -160,10 +160,10 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
           <div className="book flex shadow-2xl" style={{ transformStyle: 'preserve-3d' }}>
             {/* Left Page */}
             <div 
-              className="page left-page bg-amber-50 relative overflow-hidden"
+              className="page left-page bg-amber-50 relative overflow-hidden rounded-l-sm"
               onClick={flipPrev}
               style={{ 
-                width: '400px', 
+                width: '420px', 
                 height: '560px',
                 cursor: currentPage > 0 ? 'pointer' : 'default'
               }}
@@ -192,10 +192,10 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
 
             {/* Right Page */}
             <div 
-              className="page right-page bg-amber-50 relative overflow-hidden"
+              className="page right-page bg-amber-50 relative overflow-hidden rounded-r-sm"
               onClick={flipNext}
               style={{ 
-                width: '400px', 
+                width: '420px', 
                 height: '560px',
                 cursor: currentPage < pages.length - 2 ? 'pointer' : 'default'
               }}
@@ -227,7 +227,7 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
       {/* Page styles */}
       <style jsx global>{`
         .page-content {
-          padding: 2rem;
+          padding: 2.5rem 3rem;
           font-family: 'Georgia', serif;
           color: #3d2a1f;
           line-height: 1.7;
@@ -272,7 +272,7 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .toc-page {
-          padding: 2rem;
+          padding: 2.5rem 3rem;
         }
 
         .toc-page h2 {
@@ -312,7 +312,7 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
         }
 
         .bio-page {
-          padding: 2rem;
+          padding: 2.5rem 3rem;
         }
 
         .bio-page h2 {
