@@ -154,11 +154,13 @@ interface BookSpineProps {
 function BookSpine({ work, author, onClick }: BookSpineProps) {
   const spineColor = getSpineColor(work.type)
   
-  // Format author name as "a.FirstName" (e.g., "a.Plato", "a.Darwin")
+  // Format author name as "a.LastName" (e.g., "a.Plato", "a.Darwin")
   const formatAuthorName = (name: string): string => {
-    // Extract first name or single name
-    const firstName = name.split(' ')[0]
-    return `a.${firstName}`
+    const parts = name.split(' ')
+    // For single names (Plato, Herodotus), use as-is
+    // For multi-word names (Charles Darwin), use last name
+    const displayName = parts.length === 1 ? parts[0] : parts[parts.length - 1]
+    return `a.${displayName}`
   }
   
   const spineLabel = formatAuthorName(author.name)
