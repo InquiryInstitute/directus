@@ -36,9 +36,10 @@ jobs:
       - name: Build
         working-directory: ./frontend
         env:
-          NEXT_PUBLIC_DIRECTUS_URL: ${{ secrets.DIRECTUS_URL || 'https://directus.inquiry.institute' }}
+          NEXT_PUBLIC_DIRECTUS_URL: ${{ secrets.DIRECTUS_URL || 'https://commonplace-directus-652016456291.us-central1.run.app' }}
           NEXT_PUBLIC_DIRECTUS_TOKEN: ${{ secrets.DIRECTUS_TOKEN }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://xougqdomkoisrxdnagcj.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_URL: 'https://pilmscrodlitdrygabvo.supabase.co'
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: 'sb_publishable_L5A4YuZm5vF4o1ubDln3Dw_uRqnGsLc'
         run: npm run build
 
       - name: Setup Pages
