@@ -152,7 +152,7 @@ export default function LibraryView({ authors }: LibraryViewProps) {
 
       {/* Instructions */}
       <div className="text-center py-6 text-amber-200/40 text-sm">
-        <p>Scroll to browse • Search to find • Click to read</p>
+        <p>Scroll horizontally to browse • Type to search • Click a book to read</p>
       </div>
     </div>
   )
