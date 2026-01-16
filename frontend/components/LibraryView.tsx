@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { Author, Work } from '@/lib/directus'
 
@@ -15,67 +15,142 @@ interface LibraryViewProps {
 
 export default function LibraryView({ authors }: LibraryViewProps) {
   const [searchQuery, setSearchQuery] = useState('')
-  const libraryRef = useRef<HTMLDivElement>(null)
+  const shelfRef = useRef<HTMLDivElement>(null)
+  const bookRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
-  // Filter authors based on search (only show authors with works)
-  const filteredAuthors = authors.filter(author => {
-    const hasWorks = (author.works?.length || 0) > 0
-    if (!hasWorks) return false
-    if (!searchQuery) return true
+  // Filter and sort authors alphabetically (only those with works)
+  const sortedAuthors = useMemo(() => {
+    return authors
+      .filter(author => (author.works?.length || 0) > 0)
+      .sort((a, b) => {
+        const nameA = getDisplayName(a.name).toLowerCase()
+        const nameB = getDisplayName(b.name).toLowerCase()
+        return nameA.localeCompare(nameB)
+      })
+  }, [authors])
+
+  // Find matching author for search
+  const matchingAuthor = useMemo(() => {
+    if (!searchQuery) return null
     const query = searchQuery.toLowerCase()
-    return (
+    return sortedAuthors.find(author => 
       author.name.toLowerCase().includes(query) ||
-      author.slug.toLowerCase().includes(query)
+      getDisplayName(author.name).toLowerCase().includes(query)
     )
-  })
+  }, [searchQuery, sortedAuthors])
+
+  // Scroll to matching author when search changes
+  useEffect(() => {
+    if (matchingAuthor && shelfRef.current) {
+      const bookElement = bookRefs.current.get(matchingAuthor.slug)
+      if (bookElement) {
+        const shelfRect = shelfRef.current.getBoundingClientRect()
+        const bookRect = bookElement.getBoundingClientRect()
+        const scrollLeft = shelfRef.current.scrollLeft + (bookRect.left - shelfRect.left) - (shelfRect.width / 2) + (bookRect.width / 2)
+        
+        shelfRef.current.scrollTo({
+          left: scrollLeft,
+          behavior: 'smooth'
+        })
+      }
+    }
+  }, [matchingAuthor])
+
+  // Register book ref
+  const setBookRef = (slug: string, element: HTMLDivElement | null) => {
+    if (element) {
+      bookRefs.current.set(slug, element)
+    } else {
+      bookRefs.current.delete(slug)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
+    <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-amber-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-4xl font-serif text-amber-900 mb-2">
+      <header className="bg-stone-950 shadow-lg border-b border-amber-900/30">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <h1 className="text-4xl font-serif text-amber-100 mb-1 tracking-wide">
             Commonplace
           </h1>
-          <p className="text-amber-700">Digital Scholarly Library</p>
+          <p className="text-amber-200/60 text-sm">Digital Scholarly Library</p>
         </div>
       </header>
 
       {/* Search Bar */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="relative">
           <input
             type="text"
             placeholder="Search authors..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 pl-12 text-lg border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+            className="w-full px-5 py-4 pl-14 text-lg bg-stone-800/50 border-2 border-amber-900/40 rounded-xl focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/20 text-amber-100 placeholder-amber-200/40"
           />
           <svg
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-400"
+            className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-500/60"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+          {searchQuery && matchingAuthor && (
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-amber-400">
+              → {getDisplayName(matchingAuthor.name)}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Library Shelf - One book per author */}
-      <div ref={libraryRef} className="max-w-7xl mx-auto px-6 pb-12">
-        <h2 className="text-xl font-serif text-amber-800 mb-6">Commonplace Books</h2>
-        <div className="flex flex-wrap gap-8 justify-center">
-          {filteredAuthors.map((author) => (
-            <AuthorBook key={author.id} author={author} />
+      {/* Bookshelf */}
+      <div className="relative px-4 py-8">
+        {/* Shelf background */}
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-amber-950/40 to-transparent pointer-events-none" />
+        
+        {/* Horizontal scrolling shelf */}
+        <div
+          ref={shelfRef}
+          className="flex gap-3 overflow-x-auto pb-8 px-8 scroll-smooth"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#92400e #1c1917'
+          }}
+        >
+          {/* Left fade */}
+          <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-stone-900 to-transparent pointer-events-none z-10" />
+          
+          {sortedAuthors.map((author) => (
+            <div
+              key={author.id}
+              ref={(el) => setBookRef(author.slug, el)}
+            >
+              <AuthorBook 
+                author={author} 
+                isHighlighted={matchingAuthor?.slug === author.slug}
+              />
+            </div>
           ))}
+          
+          {/* Right fade */}
+          <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-stone-900 to-transparent pointer-events-none z-10" />
         </div>
 
-        {filteredAuthors.length === 0 && (
-          <div className="text-center py-12 text-amber-600">
-            No authors found matching "{searchQuery}"
-          </div>
-        )}
+        {/* Wooden shelf */}
+        <div className="mx-4 h-6 bg-gradient-to-b from-amber-800 via-amber-900 to-amber-950 rounded-b-sm shadow-lg" />
+        <div className="mx-4 h-2 bg-gradient-to-b from-amber-950 to-stone-900 rounded-b-lg" />
+      </div>
+
+      {/* Empty state */}
+      {sortedAuthors.length === 0 && (
+        <div className="text-center py-12 text-amber-200/60">
+          No authors with published works found.
+        </div>
+      )}
+
+      {/* Instructions */}
+      <div className="text-center py-6 text-amber-200/40 text-sm">
+        <p>Scroll to browse • Search to find • Click to read</p>
       </div>
     </div>
   )
@@ -83,60 +158,71 @@ export default function LibraryView({ authors }: LibraryViewProps) {
 
 interface AuthorBookProps {
   author: AuthorWithWorks
+  isHighlighted: boolean
 }
 
-function AuthorBook({ author }: AuthorBookProps) {
+function AuthorBook({ author, isHighlighted }: AuthorBookProps) {
   const workCount = author.works?.length || 0
-  
-  // Format author name for spine (e.g., "Plato", "Darwin")
-  const getSpineName = (name: string): string => {
-    const parts = name.split(' ')
-    // For single names (Plato, Herodotus), use as-is
-    // For multi-word names (Charles Darwin), use last name
-    return parts.length === 1 ? parts[0] : parts[parts.length - 1]
-  }
-  
-  const spineName = getSpineName(author.name)
+  const spineName = getDisplayName(author.name)
   const spineColor = getAuthorColor(author.slug)
   
   return (
     <Link
       href={`/author/${author.slug}`}
-      className="group flex flex-col items-center"
+      className="group flex flex-col items-center flex-shrink-0"
     >
-      {/* Book Spine */}
+      {/* Book */}
       <div
-        className="w-20 h-72 rounded-sm shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer relative overflow-hidden"
+        className={`
+          w-14 h-56 rounded-sm shadow-xl cursor-pointer relative overflow-hidden
+          transform transition-all duration-300 
+          hover:scale-105 hover:-translate-y-2 hover:shadow-2xl
+          ${isHighlighted ? 'scale-110 -translate-y-4 ring-2 ring-amber-400 shadow-amber-400/30' : ''}
+        `}
         style={{ backgroundColor: spineColor }}
       >
-        {/* Decorative top band */}
-        <div className="absolute top-0 left-0 right-0 h-4 bg-black bg-opacity-20" />
+        {/* Book edge effect (left) */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-r from-black/30 to-transparent" />
+        
+        {/* Decorative gold band top */}
+        <div className="absolute top-3 left-1 right-1 h-0.5 bg-gradient-to-r from-amber-400/40 via-amber-300/60 to-amber-400/40" />
         
         {/* Spine Text (Vertical) */}
-        <div className="absolute inset-0 flex items-center justify-center p-3">
+        <div className="absolute inset-0 flex items-center justify-center px-2">
           <div
-            className="text-white font-serif text-base writing-vertical-rl transform rotate-180 text-center font-semibold tracking-wider"
-            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            className="text-amber-100/90 font-serif text-xs writing-vertical-rl transform rotate-180 text-center font-medium tracking-wider whitespace-nowrap overflow-hidden"
+            style={{ 
+              writingMode: 'vertical-rl', 
+              textOrientation: 'mixed',
+              textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+            }}
           >
             {spineName}
           </div>
         </div>
         
-        {/* Decorative bottom band */}
-        <div className="absolute bottom-0 left-0 right-0 h-4 bg-black bg-opacity-20" />
+        {/* Decorative gold band bottom */}
+        <div className="absolute bottom-3 left-1 right-1 h-0.5 bg-gradient-to-r from-amber-400/40 via-amber-300/60 to-amber-400/40" />
 
-        {/* Hover Effect */}
-        <div className="absolute inset-0 bg-white bg-opacity-0 group-hover:bg-opacity-10 transition-opacity" />
+        {/* Hover glow effect */}
+        <div className="absolute inset-0 bg-amber-400/0 group-hover:bg-amber-400/10 transition-colors" />
       </div>
       
-      {/* Work count below spine */}
-      <div className="mt-3 text-center">
-        <div className="text-xs text-amber-600">
-          {workCount} {workCount === 1 ? 'entry' : 'entries'}
-        </div>
+      {/* Work count badge */}
+      <div className={`
+        mt-2 text-xs transition-all
+        ${isHighlighted ? 'text-amber-300' : 'text-amber-200/50'}
+      `}>
+        {workCount}
       </div>
     </Link>
   )
+}
+
+// Get display name (last name or single name)
+function getDisplayName(name: string): string {
+  const parts = name.split(' ')
+  return parts.length === 1 ? parts[0] : parts[parts.length - 1]
 }
 
 // Generate unique color for each author based on their slug

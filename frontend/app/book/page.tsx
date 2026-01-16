@@ -127,4 +127,3 @@ export default function BookPage() {
     </Suspense>
   )
 }
-// Build timestamp: Fri Jan 16 13:23:37 MST 2026
