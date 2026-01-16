@@ -71,7 +71,7 @@ export default function CommonplaceBook({ author, works }: CommonplaceBookProps)
       <div class="cover-page">
         <div class="cover-ornament top"></div>
         <h1>${getDisplayName(author.name)}</h1>
-        <p class="subtitle">Commonplace Book</p>
+        <p class="subtitle">Collected Thoughts & Reflections</p>
         <div class="author-full">${author.name}</div>
         <div class="cover-ornament bottom"></div>
       </div>
